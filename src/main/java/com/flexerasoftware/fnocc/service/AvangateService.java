@@ -81,7 +81,10 @@ public class AvangateService {
 
     private static final String DATE = "DATE";
 
-	static Logger log = Logger.getLogger(AvangateService.class.getName());
+    public static final String ACTIVATION = "_ACTIVATION";
+
+
+    static Logger log = Logger.getLogger(AvangateService.class.getName());
 	
 	private SecretKeyProperties secretKeyProperties;
 	private MaterialiseProperties materialiseProperties;
@@ -377,64 +380,83 @@ public class AvangateService {
 		return avangateData;
 		
 	}
-	
-	
-   public void processAvangateOrder(EntitlementVO entitlement){
-    	
-    	try{
-    		ALMIntegrationService almSvc = new ALMIntegrationService();
-    		
-        	//does entitlement exist, create/update
-    		EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
-    		if (null == entData){
-    			//does account exist?
-    			AccountVO acctVO = almSvc.getAccount(entitlement.getAccount()); 
-    			//rule in Avangate, one company = one user, however one user can be linked to multiple companies
-    			//therefore below not expecting multiple users to be returned, in any get the first one
-    			UserVO	userVOAvangate = almSvc.getUser(entitlement.getAccount().getUsers()[0]);
-    			
-    			//check if this user exist in the FNO Cloud
-    			UserVO userVOFNO = almSvc.getUserWithLinkedOrgs(userVOAvangate);
-    			   			
-    			if (null == acctVO.getAddress()){
-    				//create account
-    				almSvc.addAccount(entitlement.getAccount());
-    				//if user exist in other organisation in FNO try to link to the new org now
-    				if (userVOFNO.getOrgsLinked().size() > 0 && !userVOFNO.getOrgsLinked().contains(entitlement.getAccount().getName())){
-    					//link new organisation
-    					almSvc.linkUserToOrganisation(userVOFNO, entitlement.getAccount().getName());
-    				}
-    			}
-    			
-    			//now add entitlement
-    			almSvc.addEntitlement(entitlement);  			
-    		}
-    		
-    		//update the entitlement, only changes expected are the expiration dates, anything else will be ignored.
-    		SimpleEntitlementDataType simpleEntDataType = entData[0].getSimpleEntitlement();
-    		//expected one entitlement one line item 1:1
-    		if (simpleEntDataType.getLineItems().length >1 ){
-    			log.warn(String.format("Unexpectedly, more than a single entitlement line found in entitlement id %s",
-    					simpleEntDataType.getEntitlementId().getId()));
-    			}
-    		
-    		EntitlementLineItemDataType entLine = simpleEntDataType.getLineItems(0);
-    		entLine.setExpirationDate(entitlement.getLines()[0].getExpirationDate());
-    		simpleEntDataType.setLineItems(new EntitlementLineItemDataType[]  {entLine});
-    		entData[0].setSimpleEntitlement(simpleEntDataType);
-    		
-    		
-    		
-    		//almSvc.updateEntitlement(entitlement);
-    		
-    		
-    		
-    		
-    		
-    	}catch (Exception ex){
-    		log.error("Error occurred processing Order", ex);
-    	}
-   }
-	    	
-	
+
+
+    public void processAvangateOrder(EntitlementVO entitlement){
+
+        try{
+            ALMIntegrationService almSvc = new ALMIntegrationService();
+
+            //does entitlement exist, create/update
+            EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
+            if (null == entData){
+                //does account exist?
+                AccountVO acctVO = almSvc.getAccount(entitlement.getAccount());
+                //rule in Avangate, one company = one user, however one user can be linked to multiple companies
+                //therefore below not expecting multiple users to be returned, in any get the first one
+                UserVO	userVOAvangate = almSvc.getUser(entitlement.getAccount().getUsers()[0]);
+
+                //check if this user exist in the FNO Cloud
+                //UserVO userVOFNO = almSvc.getUserWithLinkedOrgs(userVOAvangate);
+
+                if (null == acctVO.getAddress()){
+                    //create account
+                    almSvc.addAccount(entitlement.getAccount());
+                    //if user exist in other organisation in FNO try to link to the new org now
+                    if (userVOAvangate.getOrgsLinked().size() > 0 && !userVOAvangate.getOrgsLinked().contains(entitlement.getAccount().getName())){
+                        //link new organisation
+                        almSvc.linkUserToOrganisation(userVOAvangate, entitlement.getAccount().getName());
+                    }
+                }
+
+                //now add entitlement, Line 1 is usage based part number as received from the Avangate
+                //and add another Line 2 as the activation based line
+                addActivationEntitlementline(entitlement);
+
+                almSvc.addEntitlement(entitlement);
+            }
+            //get the entitlement lines for this order, expecting two
+            //1. Usage based
+            //2. Activation based
+
+            SimpleEntitlementDataType simpleEntDataType = entData[0].getSimpleEntitlement();
+            //expected one entitlement one line item 1:1
+            //if (simpleEntDataType.getLineItems().length >1 ){
+            //	log.warn(String.format("Unexpectedly, more than a single entitlement line found in entitlement id %s",
+            //			simpleEntDataType.getEntitlementId().getId()));
+            //	}
+
+            EntitlementLineItemDataType entLine = simpleEntDataType.getLineItems(0);
+            entLine.setExpirationDate(entitlement.getLines()[0].getExpirationDate());
+            simpleEntDataType.setLineItems(new EntitlementLineItemDataType[]  {entLine});
+            entData[0].setSimpleEntitlement(simpleEntDataType);
+
+
+
+            //almSvc.updateEntitlement(entitlement);
+
+
+
+
+
+        }catch (Exception ex){
+            log.error("Error occurred processing Order", ex);
+        }
+    }
+
+
+    void addActivationEntitlementline(EntitlementVO entitlementVO){
+        //Avangate will only send a single entitlement line per entitlement
+        EntitlementLineVO lineForUsageProduct = entitlementVO.getLines()[0];
+        EntitlementLineVO lineForActivationProduct = new EntitlementLineVO();
+
+        lineForActivationProduct.setLineNumber(lineForUsageProduct.getLineNumber()+1);
+        lineForActivationProduct.setSKU(String.format("%s%s", lineForUsageProduct.getSKU(), ACTIVATION));
+        lineForActivationProduct.setEffectiveDate(new Date());
+        lineForActivationProduct.setQuantity(lineForUsageProduct.getQuantity());
+        EntitlementLineVO[] lines = new EntitlementLineVO[1];
+        lines[0] = lineForActivationProduct;
+
+    }
+
 }
