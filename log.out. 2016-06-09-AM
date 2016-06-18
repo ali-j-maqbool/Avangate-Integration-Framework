@@ -1,0 +1,24 @@
+2016-06-09 01:00:00,601 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-09 01:00:00,635 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-09 01:13:09,893 INFO  (main) [Version(<clinit>:27)] HV000001: Hibernate Validator 5.0.3.Final
+2016-06-09 01:13:21,745 INFO  (main) [LogHelper(logPersistenceUnitInformation:46)] HHH000204: Processing PersistenceUnitInfo [
+	name: default
+	...]
+2016-06-09 01:13:22,253 INFO  (main) [Version(logVersion:54)] HHH000412: Hibernate Core {4.3.1.Final}
+2016-06-09 01:13:22,297 INFO  (main) [Environment(<clinit>:239)] HHH000206: hibernate.properties not found
+2016-06-09 01:13:22,370 INFO  (main) [Environment(buildBytecodeProvider:346)] HHH000021: Bytecode provider name : javassist
+2016-06-09 01:13:23,169 INFO  (main) [Version(<clinit>:66)] HCANN000001: Hibernate Commons Annotations {4.0.4.Final}
+2016-06-09 01:13:23,463 INFO  (main) [Dialect(<init>:145)] HHH000400: Using dialect: org.hibernate.dialect.HSQLDialect
+2016-06-09 01:13:23,783 INFO  (main) [ASTQueryTranslatorFactory(<init>:47)] HHH000397: Using ASTQueryTranslatorFactory
+2016-06-09 01:13:24,408 INFO  (main) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-09 01:13:24,421 INFO  (main) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-09 01:16:42,841 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:53)] AO#MynZeU(3Tb@I%02rw
+2016-06-09 01:16:42,843 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:56)] IPN POST CALLED
+2016-06-09 01:16:42,844 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:62)] IPN PROCESSED - Body = ------WebKitFormBoundarydjqAeUgVRnVeOQ09
+Content-Disposition: form-data; name="test"
+
+why not return the body
+------WebKitFormBoundarydjqAeUgVRnVeOQ09--
+
+2016-06-09 10:05:26,902 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-09 10:05:26,921 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete

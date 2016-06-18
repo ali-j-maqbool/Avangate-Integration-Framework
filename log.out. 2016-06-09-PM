@@ -1,0 +1,28 @@
+2016-06-09 12:24:33,540 INFO  (main) [Version(<clinit>:27)] HV000001: Hibernate Validator 5.0.3.Final
+2016-06-09 12:24:47,377 INFO  (main) [LogHelper(logPersistenceUnitInformation:46)] HHH000204: Processing PersistenceUnitInfo [
+	name: default
+	...]
+2016-06-09 12:24:47,786 INFO  (main) [Version(logVersion:54)] HHH000412: Hibernate Core {4.3.1.Final}
+2016-06-09 12:24:47,812 INFO  (main) [Environment(<clinit>:239)] HHH000206: hibernate.properties not found
+2016-06-09 12:24:47,816 INFO  (main) [Environment(buildBytecodeProvider:346)] HHH000021: Bytecode provider name : javassist
+2016-06-09 12:24:48,747 INFO  (main) [Version(<clinit>:66)] HCANN000001: Hibernate Commons Annotations {4.0.4.Final}
+2016-06-09 12:24:49,010 INFO  (main) [Dialect(<init>:145)] HHH000400: Using dialect: org.hibernate.dialect.HSQLDialect
+2016-06-09 12:24:49,277 INFO  (main) [ASTQueryTranslatorFactory(<init>:47)] HHH000397: Using ASTQueryTranslatorFactory
+2016-06-09 12:24:49,791 INFO  (main) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-09 12:24:49,809 INFO  (main) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-09 12:26:34,846 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-09 12:26:34,860 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-09 12:32:17,680 INFO  (main) [Version(<clinit>:27)] HV000001: Hibernate Validator 5.0.3.Final
+2016-06-09 12:32:28,137 INFO  (main) [LogHelper(logPersistenceUnitInformation:46)] HHH000204: Processing PersistenceUnitInfo [
+	name: default
+	...]
+2016-06-09 12:32:28,507 INFO  (main) [Version(logVersion:54)] HHH000412: Hibernate Core {4.3.1.Final}
+2016-06-09 12:32:28,538 INFO  (main) [Environment(<clinit>:239)] HHH000206: hibernate.properties not found
+2016-06-09 12:32:28,554 INFO  (main) [Environment(buildBytecodeProvider:346)] HHH000021: Bytecode provider name : javassist
+2016-06-09 12:32:29,481 INFO  (main) [Version(<clinit>:66)] HCANN000001: Hibernate Commons Annotations {4.0.4.Final}
+2016-06-09 12:32:29,740 INFO  (main) [Dialect(<init>:145)] HHH000400: Using dialect: org.hibernate.dialect.HSQLDialect
+2016-06-09 12:32:29,972 INFO  (main) [ASTQueryTranslatorFactory(<init>:47)] HHH000397: Using ASTQueryTranslatorFactory
+2016-06-09 12:32:30,371 INFO  (main) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-09 12:32:30,382 INFO  (main) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-09 12:33:30,452 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-09 12:33:30,459 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete

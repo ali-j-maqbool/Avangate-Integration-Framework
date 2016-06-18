@@ -1,0 +1,129 @@
+2016-06-10 14:40:10,125 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 14:40:10,146 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 14:40:57,599 INFO  (main) [Version(<clinit>:27)] HV000001: Hibernate Validator 5.0.3.Final
+2016-06-10 14:41:08,088 INFO  (main) [LogHelper(logPersistenceUnitInformation:46)] HHH000204: Processing PersistenceUnitInfo [
+	name: default
+	...]
+2016-06-10 14:41:08,405 INFO  (main) [Version(logVersion:54)] HHH000412: Hibernate Core {4.3.1.Final}
+2016-06-10 14:41:08,423 INFO  (main) [Environment(<clinit>:239)] HHH000206: hibernate.properties not found
+2016-06-10 14:41:08,427 INFO  (main) [Environment(buildBytecodeProvider:346)] HHH000021: Bytecode provider name : javassist
+2016-06-10 14:41:09,081 INFO  (main) [Version(<clinit>:66)] HCANN000001: Hibernate Commons Annotations {4.0.4.Final}
+2016-06-10 14:41:09,272 INFO  (main) [Dialect(<init>:145)] HHH000400: Using dialect: org.hibernate.dialect.HSQLDialect
+2016-06-10 14:41:09,479 INFO  (main) [ASTQueryTranslatorFactory(<init>:47)] HHH000397: Using ASTQueryTranslatorFactory
+2016-06-10 14:41:09,910 INFO  (main) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 14:41:09,919 INFO  (main) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 14:41:35,208 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:72)] AO#MynZeU(3Tb@I%02rw
+2016-06-10 14:41:35,210 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:73)] IPN POST CALLED
+2016-06-10 14:41:35,211 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:75)] application/x-www-form-urlencoded
+2016-06-10 14:41:35,211 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:79)] org.apache.catalina.connector.RequestFacade@2fda2458
+2016-06-10 14:41:35,559 ERROR (http-nio-8080-exec-1) [AvangateController(processIPN:114)] Error has occurred.
+java.lang.NullPointerException
+	at com.flexerasoftware.fnocc.injestor.AvangateController.processIPN(AvangateController.java:108)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:497)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invoke(InvocableHandlerMethod.java:215)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:132)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:104)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandleMethod(RequestMappingHandlerAdapter.java:749)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:689)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:83)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:938)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:870)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:961)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:863)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:646)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:837)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:303)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208)
+	at org.springframework.web.filter.HiddenHttpMethodFilter.doFilterInternal(HiddenHttpMethodFilter.java:77)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:108)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:241)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:208)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:220)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:122)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:501)
+	at org.apache.catalina.valves.RemoteIpValve.invoke(RemoteIpValve.java:683)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:170)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:98)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:116)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:408)
+	at org.apache.coyote.http11.AbstractHttp11Processor.process(AbstractHttp11Processor.java:1040)
+	at org.apache.coyote.AbstractProtocol$AbstractConnectionHandler.process(AbstractProtocol.java:607)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1721)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.run(NioEndpoint.java:1679)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+2016-06-10 14:42:41,509 INFO  (http-nio-8080-exec-3) [AvangateController(processIPN:72)] AO#MynZeU(3Tb@I%02rw
+2016-06-10 14:42:41,516 INFO  (http-nio-8080-exec-3) [AvangateController(processIPN:73)] IPN POST CALLED
+2016-06-10 14:42:41,516 INFO  (http-nio-8080-exec-3) [AvangateController(processIPN:75)] application/x-www-form-urlencoded
+2016-06-10 14:42:41,517 INFO  (http-nio-8080-exec-3) [AvangateController(processIPN:79)] org.apache.catalina.connector.RequestFacade@2fda2458
+2016-06-10 14:42:41,521 INFO  (http-nio-8080-exec-3) [AvangateController(processIPN:108)] IPN PROCESSED - Body = John
+2016-06-10 15:36:39,985 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 15:36:39,990 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 15:38:30,475 INFO  (main) [Version(<clinit>:27)] HV000001: Hibernate Validator 5.0.3.Final
+2016-06-10 15:38:38,878 INFO  (main) [LogHelper(logPersistenceUnitInformation:46)] HHH000204: Processing PersistenceUnitInfo [
+	name: default
+	...]
+2016-06-10 15:38:39,130 INFO  (main) [Version(logVersion:54)] HHH000412: Hibernate Core {4.3.1.Final}
+2016-06-10 15:38:39,156 INFO  (main) [Environment(<clinit>:239)] HHH000206: hibernate.properties not found
+2016-06-10 15:38:39,159 INFO  (main) [Environment(buildBytecodeProvider:346)] HHH000021: Bytecode provider name : javassist
+2016-06-10 15:38:39,769 INFO  (main) [Version(<clinit>:66)] HCANN000001: Hibernate Commons Annotations {4.0.4.Final}
+2016-06-10 15:38:39,906 INFO  (main) [Dialect(<init>:145)] HHH000400: Using dialect: org.hibernate.dialect.HSQLDialect
+2016-06-10 15:38:40,034 INFO  (main) [ASTQueryTranslatorFactory(<init>:47)] HHH000397: Using ASTQueryTranslatorFactory
+2016-06-10 15:38:40,346 INFO  (main) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 15:38:40,355 INFO  (main) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 15:40:52,919 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:73)] IPN POST CALLED
+2016-06-10 15:40:52,922 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:86)] [Ljava.lang.String;@597ac929[Ljava.lang.String;@53edf175[Ljava.lang.String;@4a9b4e3d
+2016-06-10 15:40:52,922 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:88)] application/x-www-form-urlencoded
+2016-06-10 15:40:52,922 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:92)] org.apache.catalina.connector.RequestFacade@1448c63c
+2016-06-10 15:40:53,197 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:121)] IPN PROCESSED - Body = [Ljava.lang.String;@597ac929[Ljava.lang.String;@53edf175[Ljava.lang.String;@4a9b4e3d
+2016-06-10 16:00:53,071 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 16:00:53,080 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 16:01:27,694 INFO  (main) [Version(<clinit>:27)] HV000001: Hibernate Validator 5.0.3.Final
+2016-06-10 16:01:36,352 INFO  (main) [LogHelper(logPersistenceUnitInformation:46)] HHH000204: Processing PersistenceUnitInfo [
+	name: default
+	...]
+2016-06-10 16:01:36,754 INFO  (main) [Version(logVersion:54)] HHH000412: Hibernate Core {4.3.1.Final}
+2016-06-10 16:01:36,771 INFO  (main) [Environment(<clinit>:239)] HHH000206: hibernate.properties not found
+2016-06-10 16:01:36,776 INFO  (main) [Environment(buildBytecodeProvider:346)] HHH000021: Bytecode provider name : javassist
+2016-06-10 16:01:37,346 INFO  (main) [Version(<clinit>:66)] HCANN000001: Hibernate Commons Annotations {4.0.4.Final}
+2016-06-10 16:01:37,542 INFO  (main) [Dialect(<init>:145)] HHH000400: Using dialect: org.hibernate.dialect.HSQLDialect
+2016-06-10 16:01:37,736 INFO  (main) [ASTQueryTranslatorFactory(<init>:47)] HHH000397: Using ASTQueryTranslatorFactory
+2016-06-10 16:01:38,100 INFO  (main) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 16:01:38,111 INFO  (main) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 16:01:51,753 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:73)] IPN POST CALLED
+2016-06-10 16:01:51,755 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:86)] FIRST_NAME|[Ljava.lang.String;@1ffcd9c8
+2016-06-10 16:01:51,755 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:86)] LAST_NAME|[Ljava.lang.String;@69993238
+2016-06-10 16:01:51,756 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:86)] EMAIL|[Ljava.lang.String;@5867eab5
+2016-06-10 16:01:51,756 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:88)] FIRST_NAME|[Ljava.lang.String;@1ffcd9c8LAST_NAME|[Ljava.lang.String;@69993238EMAIL|[Ljava.lang.String;@5867eab5
+2016-06-10 16:01:51,756 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:90)] application/x-www-form-urlencoded
+2016-06-10 16:01:51,757 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:94)] org.apache.catalina.connector.RequestFacade@3ad88e86
+2016-06-10 16:01:52,079 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:123)] IPN PROCESSED - Body = FIRST_NAME|[Ljava.lang.String;@1ffcd9c8LAST_NAME|[Ljava.lang.String;@69993238EMAIL|[Ljava.lang.String;@5867eab5
+2016-06-10 16:03:19,819 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 16:03:19,823 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 16:03:53,635 INFO  (main) [Version(<clinit>:27)] HV000001: Hibernate Validator 5.0.3.Final
+2016-06-10 16:04:02,044 INFO  (main) [LogHelper(logPersistenceUnitInformation:46)] HHH000204: Processing PersistenceUnitInfo [
+	name: default
+	...]
+2016-06-10 16:04:02,337 INFO  (main) [Version(logVersion:54)] HHH000412: Hibernate Core {4.3.1.Final}
+2016-06-10 16:04:02,348 INFO  (main) [Environment(<clinit>:239)] HHH000206: hibernate.properties not found
+2016-06-10 16:04:02,351 INFO  (main) [Environment(buildBytecodeProvider:346)] HHH000021: Bytecode provider name : javassist
+2016-06-10 16:04:02,852 INFO  (main) [Version(<clinit>:66)] HCANN000001: Hibernate Commons Annotations {4.0.4.Final}
+2016-06-10 16:04:02,995 INFO  (main) [Dialect(<init>:145)] HHH000400: Using dialect: org.hibernate.dialect.HSQLDialect
+2016-06-10 16:04:03,112 INFO  (main) [ASTQueryTranslatorFactory(<init>:47)] HHH000397: Using ASTQueryTranslatorFactory
+2016-06-10 16:04:03,363 INFO  (main) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 16:04:03,370 INFO  (main) [SchemaExport(execute:405)] HHH000230: Schema export complete
+2016-06-10 16:04:08,298 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:73)] IPN POST CALLED
+2016-06-10 16:04:08,299 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:86)] FIRST_NAME|John
+2016-06-10 16:04:08,300 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:86)] LAST_NAME|Doe
+2016-06-10 16:04:08,300 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:86)] EMAIL|JMAQBOOL@FLEXERASOFTWARE.COM
+2016-06-10 16:04:08,300 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:88)] FIRST_NAME|JohnLAST_NAME|DoeEMAIL|JMAQBOOL@FLEXERASOFTWARE.COM
+2016-06-10 16:04:08,301 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:90)] application/x-www-form-urlencoded
+2016-06-10 16:04:08,302 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:94)] org.apache.catalina.connector.RequestFacade@58332afc
+2016-06-10 16:04:08,619 INFO  (http-nio-8080-exec-1) [AvangateController(processIPN:123)] IPN PROCESSED - Body = FIRST_NAME|JohnLAST_NAME|DoeEMAIL|JMAQBOOL@FLEXERASOFTWARE.COM
+2016-06-10 16:12:21,484 INFO  (Thread-2) [SchemaExport(execute:343)] HHH000227: Running hbm2ddl schema export
+2016-06-10 16:12:21,487 INFO  (Thread-2) [SchemaExport(execute:405)] HHH000230: Schema export complete

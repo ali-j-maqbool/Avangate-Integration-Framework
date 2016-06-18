@@ -1,0 +1,61 @@
+{
+  "groups": [
+    {
+      "name": "avangate",
+      "type": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties"
+    },
+    {
+      "name": "integrationFramework",
+      "type": "com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties"
+    },
+    {
+      "name": "materialise",
+      "type": "com.flexerasoftware.fnocc.configuration.MaterialiseProperties",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.MaterialiseProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "avangate.dev-secretkey",
+      "type": "java.lang.String",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties"
+    },
+    {
+      "name": "avangate.instance",
+      "type": "java.lang.String",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties"
+    },
+    {
+      "name": "avangate.prod-secretkey",
+      "type": "java.lang.String",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties"
+    },
+    {
+      "name": "avangate.test-secretkey",
+      "type": "java.lang.String",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties"
+    },
+    {
+      "name": "integrationFramework.dev-mode",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties"
+    },
+    {
+      "name": "materialise.fno-instance",
+      "type": "java.lang.String",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.MaterialiseProperties"
+    },
+    {
+      "name": "materialise.fno-prod-url",
+      "type": "java.lang.String",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.MaterialiseProperties"
+    },
+    {
+      "name": "materialise.fno-uat-url",
+      "type": "java.lang.String",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.MaterialiseProperties"
+    }
+  ]
+}
