@@ -169,13 +169,10 @@ public class AvangateController {
             }
 
             avangateSvc = new AvangateService(edr);
+            avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF"));
 
             if (avangateSvc.isValidAvangateSource(edr.getParameterMap())){
-                if(!this.integrationFrameworkProperties.getDevMode()) {
-                    avangateSvc.process();
-                }
-
-                avangateSvc.acknowledgeReceiptEDR();
+                avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF"));
             }else{
                 throw new Exception("Data received from an un-authorised source");
             }
@@ -183,6 +180,6 @@ public class AvangateController {
 			log.error("Error has occurred.", e);
 			return new InjestorResult("ERROR", e.getMessage());
 		}
-        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR());
+        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF")));
     }
 }

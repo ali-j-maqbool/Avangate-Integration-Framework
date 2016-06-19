@@ -234,17 +234,29 @@ public class AvangateService {
         }
     }
 
-    public String acknowledgeReceiptEDR() {
+    public String[] processEDR(String orgName, String refNo) {
+        ALMIntegrationService almSvc = new ALMIntegrationService();
+        String[] s = new String[2];
+        StringBuffer activationID = new StringBuffer();
 
+        for(String IDs : almSvc.getActivationID(refNo)) {
+            activationID.append("<CODE>"+IDs+"</CODE>");
+        }
+        s[0] = activationID.toString();
+        s[1] = almSvc.getCLSID(orgName);
+
+        return s;
+    }
+
+    public String acknowledgeReceiptEDR(String orgName, String refNo) {
         if (validAvangateSource)
         {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
-            String activationCode ="";
-            String clsID = "";
-
+            String[] s=processEDR(orgName,refNo);
                 //TODO:GET INFO FOR EDR RECEIPT
-                hmacStr = String.format("<CODE>%s</CODE><CODE>%s</CODE>", activationCode, clsID);
+                hmacStr = String.format("%s<CODE>%s</CODE>", s[0], s[1]);
+                log.info(hmacStr);
             return hmacStr;
         }else{
             return ("Data received did not pass validation test.");

@@ -18,6 +18,7 @@ public class IntegrationCredentials {
     public String PRODUCT_PACKAGING_SERVICE = "";
     public String ENTITLEMENT_ORDER_SERVICE_ENDPOINT = "";
     public String USER_ORG_HIERARCHY_SERVICE = "";
+    public String MANAGE_DEVICE_SERVICE = "";
     public String XMLENDPOINT = "";
     public String BATCHENDPOINT = "";
     public String USER = "";

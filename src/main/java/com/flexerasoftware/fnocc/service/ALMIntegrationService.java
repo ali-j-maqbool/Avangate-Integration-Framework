@@ -15,6 +15,15 @@ import java.net.URL;
 import java.rmi.Remote;
 import java.util.ArrayList;
 import javax.xml.soap.SOAPException;
+
+import com.flexnet.operations.webservices.CollectionOperationType;
+import com.flexnet.operations.webservices.OrganizationIdentifierType;
+import com.flexnet.operations.webservices.OrganizationPKType;
+import com.flexnet.operations.webservices.SimpleQueryType;
+import com.flexnet.operations.webservices.SimpleSearchType;
+import com.flexnet.operations.webservices.UserIdentifierType;
+import com.flexnet.operations.webservices.UserPKType;
+import com.flexnet.opsembedded.webservices.*;
 import org.apache.log4j.Logger;
 
 public class ALMIntegrationService
@@ -41,6 +50,11 @@ implements IntegrationService {
             return this.creds.USER_ORG_HIERARCHY_SERVICE;
         }
         return Credentials.USER_ORG_HIERARCHY_SERVICE;
+    }
+
+    //TODO:BEAN for managed device
+    private String getManagedDeviceServiceEndpoint() {
+        return "";
     }
 
     private String getEntitlementServiceEndpoint() {
@@ -603,8 +617,54 @@ implements IntegrationService {
 				log.error("failed to link the user to the supplied account");
 				log.error("Reason for Failure -> " + response.getStatusInfo().getReason());
 			}
-
-
 	}
-    
+
+    public String getCLSID(String orgName) {
+        String clsID = "";
+        try {
+            ManageDeviceServiceInterface service = null;
+            ManageDeviceServiceLocator locator = new ManageDeviceServiceLocator();
+            GetAutoProvisionedServerRequest gapsr = new GetAutoProvisionedServerRequest(orgName);
+            service = locator.getManageDeviceService(new URL("https://flex1168-fno-uat.flexnetoperations.com/flexnet/services/ManageDeviceService?wsdl"));
+            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
+            credentials.setUsername(this.getUser());
+            credentials.setPassword(this.getPassword());
+            this.setServiceCredentials(service);
+
+            log.info(orgName);
+            GetAutoProvisionedServerResponse response = service.getAutoProvisionedServer(gapsr);
+            clsID = response.getCloudLicenseServer().getServerIds().getServerId()[0];
+            log.info(response==null);
+        } catch(Exception e) {
+            log.error("error");
+        }
+        return clsID;
+    }
+
+    public ArrayList<String> getActivationID(String refNo) {
+        ArrayList<String> activationID = new ArrayList();
+        try {
+            EntitlementVO entitlement = new EntitlementVO();
+            entitlement.setId(refNo);
+            EntitlementDataType[] edt = getEntitlement(entitlement);
+
+            if(edt[0]==null){
+                throw new Exception("Entitlement not found");
+            } else {
+                if(edt[0].getSimpleEntitlement().getLineItems()==null) {
+                    throw new Exception("Entitlement lines not found");
+                } else {
+                    for(EntitlementLineItemDataType e : edt[0].getSimpleEntitlement().getLineItems()){
+                        if(e.getPartNumber().getPrimaryKeys().getPartId().contains("_ACTIVATION")){
+                            activationID.add(e.getActivationId().getId());
+                        }
+                    }
+                }
+            }
+
+        } catch(Exception e) {
+            log.error(e.getMessage());
+        }
+        return activationID;
+    }
 }
