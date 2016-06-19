@@ -13,6 +13,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.rmi.Remote;
+import java.util.ArrayList;
 import javax.xml.soap.SOAPException;
 import org.apache.log4j.Logger;
 
@@ -211,11 +212,12 @@ implements IntegrationService {
             lineItems[lineCount].setActivationId(idtype);
             lineItems[lineCount].setNumberOfCopies(BigInteger.valueOf(item.getQuantity()));
             lineItems[lineCount].setStartDate(item.effectiveDate);
-            if (item.expirationDate == null) {
-                lineItems[lineCount].setIsPermanent(Boolean.valueOf(true));
-            } else {
-                lineItems[lineCount].setExpirationDate(item.expirationDate);
-            }
+            lineItems[lineCount].setExpirationDate(item.expirationDate);
+            //if (item.expirationDate == null) {
+            //    lineItems[lineCount].setIsPermanent(Boolean.valueOf(true));
+            //} else {
+            //    lineItems[lineCount].setExpirationDate(item.expirationDate);
+            //}
             PartNumberIdentifierType pnIden = new PartNumberIdentifierType();
             PartNumberPKType pk = new PartNumberPKType();
             pk.setPartId(item.getSKU());
@@ -271,7 +273,6 @@ implements IntegrationService {
             //criteria.setIsBulk(new Boolean(false));
 
             ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
-            //ClientSecurityCredentials credentials = new ClientSecurityCredentials((Remote)service);
             credentials.setUsername(this.getUser());
             credentials.setPassword(this.getPassword());
             SearchEntitlementResponseType searchResponse = service.getEntitlementsQuery(searchRequest);
@@ -306,7 +307,8 @@ implements IntegrationService {
     }
 
     @Override
-    public void updateEntitlement(EntitlementVO entitlement) {
+    public void updateEntitlement(EntitlementVO entitlement) throws Exception{
+
     }
 
     @Override
@@ -395,7 +397,9 @@ implements IntegrationService {
             }
 
             if (null != userDetail.getOrgRolesList()) {
-                for (int i = 0; i < userDetail.getOrgRolesList().getOrgRoles().length; i++) {
+                user.setOrgsLinked(new ArrayList<String>());
+                for (int i=0; i < userDetail.getOrgRolesList().getOrgRoles().length; i++) {
+
                     user.addOrgsLinked(userDetail.getOrgRolesList().getOrgRoles()[i].getOrganization().getPrimaryKeys().getName());
                 }
 
@@ -410,6 +414,80 @@ implements IntegrationService {
         return user;
     }
 
+    public void updateEntitlementLine( EntitlementLineItemDataType entLine, String entId) throws Exception{
+
+        // Instantiate locator
+        EntitlementOrderServiceLocator locator = new EntitlementOrderServiceLocator();
+
+        EntitlementOrderServiceInterface service;
+
+        try {
+
+            // Get the handle to EntitlementService
+            service = locator.getEntitlementOrderService(new java.net.URL(this.getEntitlementServiceEndpoint()));
+
+            //create a request to update line item
+            UpdateEntitlementLineItemRequestType updateLineRequest = new UpdateEntitlementLineItemRequestType();
+            // allocate data array of size 1 since line tiems in only 1 entitlement will be updated
+            UpdateEntitlementLineItemDataType[] updateArray = new UpdateEntitlementLineItemDataType[1];
+            updateLineRequest.setLineItemData(updateArray);
+            updateArray[0] = new UpdateEntitlementLineItemDataType();
+
+            // The entitlement to be deleted can be specified in tersm of its unique id or its primary keys.
+            // here we are specifying the primary key, which is the entitlement id.
+            EntitlementIdentifierType entIden = new EntitlementIdentifierType();
+            EntitlementPKType entpk = new EntitlementPKType();
+            entpk.setEntitlementId(entId);
+            entIden.setPrimaryKeys(entpk);
+            updateArray[0].setEntitlementIdentifier(entIden);
+
+            //allocate data array of size 1 since only 1 line item is being updated
+            UpdateLineItemDataType[] lineItemData = new UpdateLineItemDataType[1];
+            updateArray[0].setLineItemData(lineItemData);
+            lineItemData[0] = new UpdateLineItemDataType();
+
+            // The entitlement line item to be updated can be specified in terms of its unique id or its primary keys.
+            // here we are specifying the primary key, which is the entitlement line item id.
+            EntitlementLineItemIdentifierType lineIden = new EntitlementLineItemIdentifierType();
+            EntitlementLineItemPKType linepk = new EntitlementLineItemPKType();
+            linepk.setActivationId(entLine.getActivationId().getId());
+            lineIden.setPrimaryKeys(linepk);
+            lineItemData[0].setLineItemIdentifier(lineIden);
+            lineItemData[0].setNumberOfCopies(entLine.getNumberOfCopies());
+            lineItemData[0].setExpirationDate(entLine.getExpirationDate());
+
+            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
+            credentials.setUsername(this.getUser());
+            credentials.setPassword(this.getPassword());
+
+            UpdateEntitlementLineItemResponseType updateLineResponse = service.updateEntitlementLineItem(updateLineRequest);
+
+            // Check the status in the response
+            if (updateLineResponse.getStatusInfo().getStatus().toString().equals(StatusType.SUCCESS.toString()))
+            {
+                log.info("Line Item updated successfully ");
+            }else
+            {
+                log.error("Update line item failed");
+                log.error("Reason for Failure -> " +
+                        updateLineResponse.getStatusInfo().getReason() != null ?
+                        updateLineResponse.getStatusInfo().getReason() : "no reason returned");
+
+                if (null != updateLineResponse && null != updateLineResponse.getFailedData()) {
+                    FailedUpdateEntitlementLineItemDataListType failedData = updateLineResponse.getFailedData();
+                    FailedUpdateEntitlementLineItemDataType[] failedArray = failedData.getFailedData();
+                    for (int ii = 0; failedArray != null && ii < failedArray.length; ii++) {
+                        log.error("Entitlement line item update failed due to reason :" + failedArray[ii].getReason());
+                    }
+                }
+            }
+
+        }
+        catch(Exception e) {
+            log.error("Error occurred updating entitlement line", e);
+        }
+
+    }
 
     public UserVO getUserWithLinkedOrgs(UserVO user) throws Exception {
         UserVO usr = new UserVO();       

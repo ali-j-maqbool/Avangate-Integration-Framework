@@ -43,6 +43,11 @@
       "sourceType": "com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties"
     },
     {
+      "name": "integrationFramework.hash-check",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties"
+    },
+    {
       "name": "materialise.fno-instance",
       "type": "java.lang.String",
       "sourceType": "com.flexerasoftware.fnocc.configuration.MaterialiseProperties"

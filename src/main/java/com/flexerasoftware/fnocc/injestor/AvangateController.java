@@ -3,21 +3,14 @@
  */
 package com.flexerasoftware.fnocc.injestor;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.Map.Entry;
-import javax.servlet.http.HttpServletRequest;
 
-import com.flexerasoftware.fnocc.avangate.IPNData;
+import java.util.*;
+import javax.servlet.http.HttpServletRequest;
 import com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties;
 import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -92,17 +85,15 @@ public class AvangateController {
                 avangateSvc.acknowledgeReceipt();
 
             if (avangateSvc.isValidAvangateSource(ipn.getParameterMap())){
-					if(!this.integrationFrameworkProperties.getDevMode()) {
-                        avangateSvc.process();
-                    }
-					avangateSvc.acknowledgeReceipt();
-				}else{
+				avangateSvc.process();
+				avangateSvc.acknowledgeReceipt();
+			}else{
 					throw new Exception("Data received from an un-authorised source");
-				}
-			} catch (Exception e) {
+			}
+		} catch (Exception e) {
 				log.error("Error has occurred.", e);
 				return new InjestorResult("ERROR", e.getMessage());
-			}
+		}
 		return new InjestorResult("OK",avangateSvc.acknowledgeReceipt());
 	
 	}
