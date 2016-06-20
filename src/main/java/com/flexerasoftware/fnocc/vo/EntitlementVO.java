@@ -3,10 +3,9 @@
  */
 package com.flexerasoftware.fnocc.vo;
 
-import com.flexerasoftware.fnocc.vo.AccountVO;
-import com.flexerasoftware.fnocc.vo.BaseVO;
-import com.flexerasoftware.fnocc.vo.EntitlementLineVO;
+import java.util.ArrayList;
 import java.util.Date;
+
 
 public class EntitlementVO
 extends BaseVO {
@@ -36,5 +35,16 @@ extends BaseVO {
 
     public void setOrderDate(Date orderDate) {
         this.orderDate = orderDate;
+    }
+
+    public void addLine(EntitlementLineVO line ) {
+        ArrayList<EntitlementLineVO>  newLines= new ArrayList<EntitlementLineVO>();
+        for (EntitlementLineVO element : lines) {
+            newLines.add(element);
+        }
+        //now add the new one
+        newLines.add(line);
+        lines = null;
+        lines = newLines.toArray(new EntitlementLineVO[0]);
     }
 }

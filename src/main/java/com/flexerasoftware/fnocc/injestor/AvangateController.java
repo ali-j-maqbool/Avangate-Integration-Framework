@@ -3,21 +3,14 @@
  */
 package com.flexerasoftware.fnocc.injestor;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.Map.Entry;
-import javax.servlet.http.HttpServletRequest;
 
-import com.flexerasoftware.fnocc.avangate.IPNData;
+import java.util.*;
+import javax.servlet.http.HttpServletRequest;
 import com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties;
 import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,8 +31,11 @@ public class AvangateController {
 	private SecretKeyProperties secretKeyProperties;
 	private MaterialiseProperties materialiseProperties;
     private IntegrationFrameworkProperties integrationFrameworkProperties;
-	
-	ApplicationContext propertiesCTX = new AnnotationConfigApplicationContext(SecretKeyProperties.class);
+    private static final String COMPANY = "COMPANY";
+    private static final String LICENSE_REF = "LICENSE_REF";
+
+
+    ApplicationContext propertiesCTX = new AnnotationConfigApplicationContext(SecretKeyProperties.class);
 	ApplicationContext materialiseCTX = new AnnotationConfigApplicationContext(MaterialiseProperties.class);
     ApplicationContext integrationFrameworkCTX = new AnnotationConfigApplicationContext(IntegrationFrameworkProperties.class);
 
@@ -53,15 +49,27 @@ public class AvangateController {
 		return new InjestorResult("OK", "FNO - AVANGATE END-POINT RUNNING");
 	}
 	
-	public void requestInformation(Map<String,String[]> data){
+	public void requestInformation(HttpServletRequest request){
+        Map<String,String[]> data = request.getParameterMap();
+        String ipAddress = request.getHeader("X-FORWARDED-FOR");
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
+        }
+        System.out.println("ipAddress:" + ipAddress);
         this.integrationFrameworkProperties = integrationFrameworkCTX.getBean(IntegrationFrameworkProperties.class);
         if(this.integrationFrameworkProperties.getDevMode()){
             StringBuilder sb = new StringBuilder();
-            Set<String> keySet = data.keySet();
-            for(String key: keySet) {
-            sb.append(String.format("[%s,%s] ",key,data.get(key)[0]));
-        }
-        log.info("REQUEST INFORMATION: "+sb.toString());
+            String[] keySet = data.keySet().toArray(new String[data.keySet().size()]);
+            sb.append("[");
+            for(int i=0;i<keySet.length;i++) {
+                sb.append(String.format("%s=%s",keySet[i],data.get(keySet[i])[0]));
+                if(i==keySet.length-1) {
+                    sb.append("ipAddress="+ipAddress+"]");
+                }else{
+                    sb.append(",\n");
+                }
+            }
+            log.info("REQUEST INFORMATION: "+sb.toString());
         }
     }
 	
@@ -80,31 +88,28 @@ public class AvangateController {
 		try {
             this.integrationFrameworkProperties = integrationFrameworkCTX.getBean(IntegrationFrameworkProperties.class);
 
-            requestInformation(ipn.getParameterMap());
+            requestInformation(ipn);
 
-			if (ipn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
+            if (ipn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
 				log.info(String.format("IPN POST CALLED"));
-			}else if (ipn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
+			} else if (ipn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
 				log.info(String.format("IPN GET CALLED"));
 				return new InjestorResult("OK","Get request processed");
 			}
-				avangateSvc = new AvangateService(ipn);
-                avangateSvc.acknowledgeReceipt();
+            avangateSvc = new AvangateService(ipn);
 
             if (avangateSvc.isValidAvangateSource(ipn.getParameterMap())){
-					if(!this.integrationFrameworkProperties.getDevMode()) {
-                        avangateSvc.process();
-                    }
-					avangateSvc.acknowledgeReceipt();
-				}else{
-					throw new Exception("Data received from an un-authorised source");
-				}
-			} catch (Exception e) {
-				log.error("Error has occurred.", e);
-				return new InjestorResult("ERROR", e.getMessage());
+				avangateSvc.process();
+				avangateSvc.acknowledgeReceipt();
+			} else {
+                throw new Exception("Data received from an un-authorised source");
 			}
+		} catch (Exception e) {
+            log.error("Error has occurred.", e);
+            return new InjestorResult("ERROR", e.getMessage());
+		}
+
 		return new InjestorResult("OK",avangateSvc.acknowledgeReceipt());
-	
 	}
 	
 	/**
@@ -119,27 +124,22 @@ public class AvangateController {
         AvangateService avangateSvc = null;
 
         try {
-            requestInformation(lcn.getParameterMap());
-
+            requestInformation(lcn);
 
             if (lcn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("LCN POST CALLED"));
-            }else if (lcn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
+            } else if (lcn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
                 log.info(String.format("LCN GET CALLED"));
                 return new InjestorResult("OK","Get request processed");
             }
-
-            this.secretKeyProperties = propertiesCTX.getBean(SecretKeyProperties.class);
-            this.materialiseProperties = materialiseCTX.getBean(MaterialiseProperties.class);
 
             avangateSvc = new AvangateService(lcn);
             if (avangateSvc.isValidAvangateSource(lcn.getParameterMap())){
                 if(!this.integrationFrameworkProperties.getDevMode()) {
                     avangateSvc.process();
                 }
-
                 avangateSvc.acknowledgeReceiptLCN();
-            }else{
+            } else {
                 throw new Exception("Data received from an un-authorised source");
             }
 
@@ -151,6 +151,7 @@ public class AvangateController {
 			log.error("Error has occurred.", e);
 			return new InjestorResult("ERROR", e.getMessage());
 		}
+
         return new InjestorResult("OK",avangateSvc.acknowledgeReceiptLCN());
     }
 	
@@ -168,11 +169,12 @@ public class AvangateController {
         AvangateService avangateSvc = null;
 
         try {
-            requestInformation(edr.getParameterMap());
+            requestInformation(edr);
+            this.secretKeyProperties = propertiesCTX.getBean(SecretKeyProperties.class);
 
             if (edr.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("EDR POST CALLED"));
-            }else if (edr.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
+            } else if(edr.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
                 log.info(String.format("EDR GET CALLED"));
                 return new InjestorResult("OK","Get request processed");
             }
@@ -180,18 +182,15 @@ public class AvangateController {
             avangateSvc = new AvangateService(edr);
 
             if (avangateSvc.isValidAvangateSource(edr.getParameterMap())){
-                if(!this.integrationFrameworkProperties.getDevMode()) {
-                    avangateSvc.process();
-                }
-
-                avangateSvc.acknowledgeReceiptEDR();
-            }else{
+                avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF),this.secretKeyProperties.getClsID());
+            } else {
                 throw new Exception("Data received from an un-authorised source");
             }
         } catch (Exception e) {
 			log.error("Error has occurred.", e);
 			return new InjestorResult("ERROR", e.getMessage());
 		}
-        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR());
+
+        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF),this.secretKeyProperties.getClsID()));
     }
 }

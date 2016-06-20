@@ -11,15 +11,15 @@ import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties;
+import com.flexnet.operations.webservices.StateType;
 import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 
 import com.flexerasoftware.fnocc.avangate.AvangateHmacmd;
-import com.flexerasoftware.fnocc.configuration.MaterialiseProperties;
 import com.flexerasoftware.fnocc.configuration.SecretKeyProperties;
-import com.flexerasoftware.fnocc.injestor.AvangateController;
 import com.flexerasoftware.fnocc.vo.AccountVO;
 import com.flexerasoftware.fnocc.vo.AddressVO;
 import com.flexerasoftware.fnocc.vo.EntitlementLineVO;
@@ -27,7 +27,6 @@ import com.flexerasoftware.fnocc.vo.EntitlementVO;
 import com.flexerasoftware.fnocc.vo.UserVO;
 import com.flexnet.operations.webservices.EntitlementDataType;
 import com.flexnet.operations.webservices.EntitlementLineItemDataType;
-import com.flexnet.operations.webservices.SimpleEntitlementDataType;
 
 /**
  * @author Jawaid
@@ -81,13 +80,23 @@ public class AvangateService {
 
     private static final String DATE = "DATE";
 
-	static Logger log = Logger.getLogger(AvangateService.class.getName());
+    private static final String ORDERSTATUS = "ORDERSTATUS";
+
+    private static final String COMPLETE = "COMPLETE";
+
+    private static final String REFUND = "REFUND";
+
+    public static final String ACTIVATION = "_ACTIVATION";
+	public static final String IPN_LICENSE_EXP = "IPN_LICENSE_EXP[]";
+
+    static Logger log = Logger.getLogger(AvangateService.class.getName());
 	
 	private SecretKeyProperties secretKeyProperties;
-	private MaterialiseProperties materialiseProperties;
+	private IntegrationFrameworkProperties integrationFrameworkProperties;
 
-	ApplicationContext secretKeyCTX = new AnnotationConfigApplicationContext(SecretKeyProperties.class);
-	ApplicationContext materialiseCTX = new AnnotationConfigApplicationContext(MaterialiseProperties.class);
+
+	private ApplicationContext secretKeyCTX = new AnnotationConfigApplicationContext(SecretKeyProperties.class);
+	private ApplicationContext integFrmwrkCTX = new AnnotationConfigApplicationContext(IntegrationFrameworkProperties.class);
 
 	
 
@@ -96,6 +105,7 @@ public class AvangateService {
 	 */
 	private HttpServletRequest incomingData;
 	private SimpleDateFormat dateFormat;
+	private SimpleDateFormat lineDateFormat;
 	private Date currentDate = new Date();
 
 	private boolean validAvangateSource;
@@ -103,9 +113,8 @@ public class AvangateService {
 
 	public AvangateService(HttpServletRequest ipn) throws Exception {
 		this.incomingData = ipn;
-		dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-		
-		//log.info(this.getTestSecretkey());
+		this.dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+		this.lineDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	}
 	
 	/**
@@ -114,9 +123,12 @@ public class AvangateService {
 	 * @return
 	 */
 	public boolean isValidAvangateSource(Map<String,String[]> data){
-		//TODO: Implementation to be verified by avangate
-		 //now calculate the length of each string and concatenate
+        //now calculate the length of each string and concatenate
 		this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
+        this.integrationFrameworkProperties = integFrmwrkCTX.getBean(IntegrationFrameworkProperties.class);
+
+        if (this.integrationFrameworkProperties.getDevMode()) {return true;}
+
 		AvangateHmacmd md5 = AvangateHmacmd.getInstance();
     	StringBuffer sb = new StringBuffer();
     	String generatedHashCode="";
@@ -139,7 +151,7 @@ public class AvangateService {
                     sb.append(String.format("%s%s", valLength, val));
                     System.out.println(valLength + "-" + val);
                 }
-            }else{
+            } else {
                 hashFromData = data.get(key)[0];
             }
         }
@@ -150,23 +162,20 @@ public class AvangateService {
     			generatedHashCode = md5.calculatehmac(sb.toString().trim(), this.secretKeyProperties.getTestSecretkey());
     			System.out.println("The hash code is:"+generatedHashCode);
 			} catch (InvalidKeyException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 				log.error("Error ocurred invalid key",e);
 				validAvangateSource = false;
 			} catch (NoSuchAlgorithmException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				log.error("No Such Algorithm Exception",e);
 				validAvangateSource = false;
 			}
+
         validAvangateSource = generatedHashCode.equals(hashFromData);
     	return generatedHashCode.equals(hashFromData);
 	}
 	
 	public String acknowledgeReceipt() {
-		if (validAvangateSource)
-		{
+		if (validAvangateSource) {
             this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
 
             //now calculate the length of each string and concatenate
@@ -183,11 +192,9 @@ public class AvangateService {
 
 	    	sb.append(String.format("%s%s", dtToStr.getBytes().length, dtToStr  ));
 
-
 	    	AvangateHmacmd md5 = AvangateHmacmd.getInstance();
 			
 			try {
-				//TODO:READ THE KEY FROM THE PROPERTIES FILE
                 hmacStr = String.format("<EPAYMENT>%s|%s</EPAYMENT>", dtToStr, md5.calculatehmac(sb.toString().trim(), this.secretKeyProperties.getTestSecretkey()));
                 log.info("HMAC: "+hmacStr);
                 log.info("SOURCE: "+ sb.toString().trim());
@@ -195,15 +202,13 @@ public class AvangateService {
 				log.error("Error has occurred.", e);
 			}
 			return hmacStr;
-		}else{		
+		} else {
 			return ("Data received did not pass validation test.");
 		}
 	}
 
     public String acknowledgeReceiptLCN() {
-
-        if (validAvangateSource)
-        {
+        if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
             Map<String, String[]> avangateData = incomingData.getParameterMap();
@@ -220,30 +225,48 @@ public class AvangateService {
             AvangateHmacmd md5 = AvangateHmacmd.getInstance();
 
             try {
-                //TODO:READ THE KEY FROM THE PROPERTIES FILE
+                hmacStr = String.format("<EPAYMENT>%s|%s</EPAYMENT>", dtToStr, md5.calculatehmac(sb.toString().trim(), this.secretKeyProperties.getTestSecretkey()));
                 hmacStr = String.format("<EPAYMENT>%s|%s</EPAYMENT>", dtToStr, md5.calculatehmac(sb.toString().trim(), this.secretKeyProperties.getTestSecretkey()));
             } catch (InvalidKeyException | NoSuchAlgorithmException e) {
                 log.error("Error has occurred.", e);
             }
             return hmacStr;
-        }else{
+        } else {
             return ("Data received did not pass validation test.");
         }
     }
 
-    public String acknowledgeReceiptEDR() {
+    public String[] processEDR(String orgName, String refNo, boolean clsRequired) {
+        ALMIntegrationService almSvc = new ALMIntegrationService();
+        String[] s = new String[2];
+        StringBuffer activationID = new StringBuffer();
 
-        if (validAvangateSource)
-        {
+        for(String IDs : almSvc.getActivationID(refNo)) {
+            activationID.append("<CODE>"+IDs+"</CODE>");
+        }
+        s[0] = activationID.toString();
+
+        if(clsRequired) {
+            s[1] = almSvc.getCLSID(orgName);
+        }
+
+        return s;
+    }
+
+    public String acknowledgeReceiptEDR(String orgName, String refNo, boolean clsRequired) {
+        if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
-            String activationCode ="";
-            String clsID = "";
-
+            String[] s=processEDR(orgName,refNo,clsRequired);
                 //TODO:GET INFO FOR EDR RECEIPT
-                hmacStr = String.format("<CODE>%s</CODE><CODE>%s</CODE>", activationCode, clsID);
+                if(clsRequired) {
+                    hmacStr = String.format("%s<CODE>%s</CODE>", s[0], s[1]);
+                } else {
+                    hmacStr = String.format("%s",s[0]);
+                }
+                log.info(hmacStr);
             return hmacStr;
-        }else{
+        } else {
             return ("Data received did not pass validation test.");
         }
     }
@@ -254,7 +277,7 @@ public class AvangateService {
 	 * Operates to take the incoming data and translate that to the common
 	 * data model.
 	 * 
-	 * @see com.flexerasoftware.fnocc.service.ExternalService#process()
+	 *
 	 */
 	public void process() throws Exception {
 		if (incomingData == null) {
@@ -262,7 +285,6 @@ public class AvangateService {
 		}
 
 		try {
-			
 			//map data
 			//NOTE: HAD TO ENABLE COUNTRY_CODE, IPN_LICENSE_REF, IPN_LICENSE_TYPE, IPN_LICENSE_EXP[] in Avangate system
 			
@@ -270,69 +292,111 @@ public class AvangateService {
 			// TODO: PROCESS THE INCOMING DATA
 			
 			Map<String, String[]> avangateData = incomingData.getParameterMap();
-			
-			//validate mandatory fields
-			avangateData = validateOrderData(avangateData);
-			if (avangateData.containsKey(MISSING_FIELDS_FOUND)){
-				throw new Exception(String.format("Missing data in the request %s", avangateData.get(MISSING_FIELDS_FOUND)[0]));
-			}
-						
-			String s = incomingData.getParameter(IPN_PID);
-			
-			String ipnLicenseType = avangateData.get(IPN_LICENSE_TYPE)[0];
-			
-			if (ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR)){
-				
-			}else if (ipnLicenseType.equals(LICENSE_TYPE_RENEW)) {
-				
-			}else{
-				throw new Exception("Only REGULAR and RENEW IPN license types expected, Transaction aborted");
-			}
 
-			AccountVO account = new AccountVO();
-			account.setId(avangateData.get(COMPANY)[0]);
-			account.setName(avangateData.get(COMPANY)[0]);
-			UserVO[] users = new UserVO[1];
-			UserVO user = new UserVO();
-			user.setAccountID(account.getId());
-			user.setEmail(avangateData.get(CUSTOMEREMAIL)[0]);
-			user.setFirstName(avangateData.get(FIRSTNAME)[0]);
-			user.setLastName(avangateData.get(LASTNAME)[0]);
-			AddressVO address = new AddressVO();
-			address.setAddress1(avangateData.get(ADDRESS1)[0]);
-			address.setAddress2(avangateData.get(ADDRESS2)[0]);
-			address.setCountry(avangateData.get(COUNTRY_CODE)[0]);
+            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
+                processRefund(avangateData);
+                return;
+            }
 
-			address.setCity(avangateData.get(CITY)[0]);
-			address.setState(NOT_US_OR_CANADA);
-			address.setZipcode(avangateData.get(ZIPCODE)[0]);
-			user.setAddress(address);
-			users[0] = user;
-			account.setUsers(users);
-			EntitlementVO entitlement = new EntitlementVO();
-			entitlement.setAccount(account);
-			entitlement.setId(avangateData.get(IPN_LICENSE_REF)[0]);
-			entitlement.setOrderDate(new Date());
-			EntitlementLineVO line = new EntitlementLineVO();
-			line.setLineNumber(1);
-			line.setSKU(avangateData.get(IPN_PID)[0]);
-			line.setEffectiveDate(new Date());
-			line.setQuantity(Integer.parseInt(avangateData.get(IPN_QTY)[0]));
-			EntitlementLineVO[] lines = new EntitlementLineVO[1];
-			lines[0] = line;
-			entitlement.setLines(lines);		
-			
-			//process the order			
-			processAvangateOrder(entitlement);		
-			
-			
+            if(!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(COMPLETE)) {
+                //validate mandatory fields
+                avangateData = validateOrderData(avangateData);
+                if (avangateData.containsKey(MISSING_FIELDS_FOUND)) {
+                    throw new Exception(String.format("Missing data in the request %s", avangateData.get(MISSING_FIELDS_FOUND)[0]));
+                }
 
+                String s = incomingData.getParameter(IPN_PID);
+
+                String ipnLicenseType = avangateData.get(IPN_LICENSE_TYPE)[0];
+
+                if (ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR)) {
+
+                } else if (ipnLicenseType.equals(LICENSE_TYPE_RENEW)) {
+
+                } else {
+                    throw new Exception("Only REGULAR and RENEW IPN license types expected, Transaction aborted");
+                }
+
+                AccountVO account = new AccountVO();
+                account.setId(avangateData.get(COMPANY)[0]);
+                account.setName(avangateData.get(COMPANY)[0]);
+                UserVO[] users = new UserVO[1];
+                UserVO user = new UserVO();
+                user.setAccountID(account.getId());
+                user.setEmail(avangateData.get(CUSTOMEREMAIL)[0]);
+                user.setFirstName(avangateData.get(FIRSTNAME)[0]);
+                user.setLastName(avangateData.get(LASTNAME)[0]);
+                AddressVO address = new AddressVO();
+                address.setAddress1(avangateData.get(ADDRESS1)[0]);
+                address.setAddress2(avangateData.get(ADDRESS2)[0]);
+                address.setCountry(avangateData.get(COUNTRY_CODE)[0]);
+
+                address.setCity(avangateData.get(CITY)[0]);
+                address.setState(NOT_US_OR_CANADA);
+                address.setZipcode(avangateData.get(ZIPCODE)[0]);
+                user.setAddress(address);
+                users[0] = user;
+                account.setUsers(users);
+                EntitlementVO entitlement = new EntitlementVO();
+                entitlement.setAccount(account);
+                entitlement.setId(avangateData.get(IPN_LICENSE_REF)[0]);
+                entitlement.setOrderDate(new Date());
+                EntitlementLineVO line = new EntitlementLineVO();
+                line.setLineNumber(1);
+                line.setSKU(avangateData.get(IPN_PID)[0]);
+                //TODO:To be changed to IPN_LICENSE_START
+                //line.setExpirationDate(avangateData.get(IPN_LICENSE_START)[0]);
+
+                line.setEffectiveDate(new Date());
+                line.setExpirationDate(lineDateFormat.parse(avangateData.get(IPN_LICENSE_EXP)[0]));
+                line.setQuantity(Integer.parseInt(avangateData.get(IPN_QTY)[0]));
+                EntitlementLineVO[] lines = new EntitlementLineVO[1];
+                lines[0] = line;
+                entitlement.setLines(lines);
+
+                //process the order
+                processAvangateOrder(entitlement);
+            }
 		} catch (Exception e) {
 			log.error("Error has occurred.", e);
 		}
 	}
-	
-	private Map<String, String[]> validateOrderData(Map<String, String[]> avangateData){
+
+    public void processRefund(Map<String,String[]> request) throws Exception {
+        if (incomingData == null) {
+            throw new Exception("No data set.");
+        }
+        ALMIntegrationService almSvc = new ALMIntegrationService();
+        String activationID = "";
+
+        //recieve data find right entitlement iterate through each line and change status to inactive
+        EntitlementVO entitlement = new EntitlementVO();
+        entitlement.setId(request.get(IPN_LICENSE_REF)[0]);
+        EntitlementDataType[] edt = almSvc.getEntitlement(entitlement);
+
+        if(edt[0]==null){
+            throw new Exception("Entitlement not found");
+        } else {
+            if(edt[0].getSimpleEntitlement().getLineItems()==null) {
+                throw new Exception("Entitlement lines not found");
+            } else {
+                for(EntitlementLineItemDataType e : edt[0].getSimpleEntitlement().getLineItems()){
+                    e.setState(StateType.INACTIVE);
+
+//                    almSvc.updateEntitlementLine(e , edt[0].getSimpleEntitlement().getEntitlementId().getId());
+                    almSvc.setEntitleLineStatus(StateType.INACTIVE,e.getActivationId().getId());
+                }
+            }
+        }
+
+    }
+
+
+
+
+
+
+        private Map<String, String[]> validateOrderData(Map<String, String[]> avangateData){
 		
 		StringBuffer missingFields = new StringBuffer();
 
@@ -377,64 +441,105 @@ public class AvangateService {
 		return avangateData;
 		
 	}
-	
-	
-   public void processAvangateOrder(EntitlementVO entitlement){
-    	
-    	try{
-    		ALMIntegrationService almSvc = new ALMIntegrationService();
-    		
-        	//does entitlement exist, create/update
-    		EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
-    		if (null == entData){
-    			//does account exist?
-    			AccountVO acctVO = almSvc.getAccount(entitlement.getAccount()); 
-    			//rule in Avangate, one company = one user, however one user can be linked to multiple companies
-    			//therefore below not expecting multiple users to be returned, in any get the first one
-    			UserVO	userVOAvangate = almSvc.getUser(entitlement.getAccount().getUsers()[0]);
-    			
-    			//check if this user exist in the FNO Cloud
-    			UserVO userVOFNO = almSvc.getUserWithLinkedOrgs(userVOAvangate);
-    			   			
-    			if (null == acctVO.getAddress()){
-    				//create account
-    				almSvc.addAccount(entitlement.getAccount());
-    				//if user exist in other organisation in FNO try to link to the new org now
-    				if (userVOFNO.getOrgsLinked().size() > 0 && !userVOFNO.getOrgsLinked().contains(entitlement.getAccount().getName())){
-    					//link new organisation
-    					almSvc.linkUserToOrganisation(userVOFNO, entitlement.getAccount().getName());
-    				}
-    			}
-    			
-    			//now add entitlement
-    			almSvc.addEntitlement(entitlement);  			
-    		}
-    		
-    		//update the entitlement, only changes expected are the expiration dates, anything else will be ignored.
-    		SimpleEntitlementDataType simpleEntDataType = entData[0].getSimpleEntitlement();
-    		//expected one entitlement one line item 1:1
-    		if (simpleEntDataType.getLineItems().length >1 ){
-    			log.warn(String.format("Unexpectedly, more than a single entitlement line found in entitlement id %s",
-    					simpleEntDataType.getEntitlementId().getId()));
-    			}
-    		
-    		EntitlementLineItemDataType entLine = simpleEntDataType.getLineItems(0);
-    		entLine.setExpirationDate(entitlement.getLines()[0].getExpirationDate());
-    		simpleEntDataType.setLineItems(new EntitlementLineItemDataType[]  {entLine});
-    		entData[0].setSimpleEntitlement(simpleEntDataType);
-    		
-    		
-    		
-    		//almSvc.updateEntitlement(entitlement);
-    		
-    		
-    		
-    		
-    		
-    	}catch (Exception ex){
-    		log.error("Error occurred processing Order", ex);
-    	}
-   }
-	    	
-	
+
+
+    public void processAvangateOrder(EntitlementVO entitlement){
+
+        try{
+            ALMIntegrationService almSvc = new ALMIntegrationService();
+
+            if (entitlement.getAccount().getUsers().length > 0){
+                log.warn(String.format(
+                        "Unexpectedly, more than one user attached to the account only the first user processed, %s",
+                        entitlement.getAccount().getUsers()[0].getEmail()));
+            }
+
+            //does entitlement exist, create/update
+            EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
+
+            if (null == entData){
+                createNewEntitlement(entitlement, almSvc);
+            }else{
+                updateEntitlement(entitlement, almSvc, entData);
+            }
+
+      }catch (Exception ex){
+            log.error("Error occurred processing Order", ex);
+        }
+    }
+
+    void createNewEntitlement(EntitlementVO entitlement, ALMIntegrationService almSvc) throws Exception{
+
+        //does account exist?
+        AccountVO acctVO;
+        acctVO = almSvc.getAccount(entitlement.getAccount());
+        //rule in Avangate, one company = one user, however one user can be linked to multiple companies
+        //therefore below not expecting multiple users to be returned, in any get the first one
+        UserVO	userVOAvangate = almSvc.getUser(entitlement.getAccount().getUsers()[0]);
+
+        //check if this user exist in the FNO Cloud
+        //UserVO userVOFNO = almSvc.getUserWithLinkedOrgs(userVOAvangate);
+
+        if (null == acctVO.getAddress()) {
+			//create account
+			almSvc.addAccount(entitlement.getAccount());
+			//if user exist in other organisation in FNO try to link to the new org now
+			if (userVOAvangate.getOrgsLinked().size() > 0 &&
+					!userVOAvangate.getOrgsLinked().contains(entitlement.getAccount().getName())) {
+				//link new organisation
+				almSvc.linkUserToOrganisation(userVOAvangate, entitlement.getAccount().getName());
+			} else {
+				//create user, only one user is expected
+				almSvc.addUser(entitlement.getAccount().getUsers()[0]);
+
+			}
+		}
+
+            //now add entitlement, Line 1 is usage based part number as received from the Avangate
+            //and add another Line 2 as the activation based line
+            addActivationEntitlementline(entitlement);
+
+            almSvc.addEntitlement(entitlement);
+
+    }
+
+    void updateEntitlement(EntitlementVO entitlement, ALMIntegrationService almSvc, EntitlementDataType[] entData ) throws Exception{
+        //get the entitlement lines for this order, expecting two
+        //1. Usage based
+        //2. Activation based
+
+        //only processing the first entitlement object as per the specifications
+        for (int i=0; i < entData[0].getSimpleEntitlement().getLineItems().length; i++) {
+            EntitlementLineItemDataType entLine = entData[0].getSimpleEntitlement().getLineItems()[i];
+            entLine.setExpirationDate(entitlement.getLines()[0].getExpirationDate());
+
+            almSvc.updateEntitlementLine(entLine, entitlement.getId());
+        }
+
+    }
+
+    /**
+     * Create entitlement line for the activation product
+     * @param entitlementVO
+     */
+    void addActivationEntitlementline(EntitlementVO entitlementVO){
+        //Avangate will only send a single entitlement line per entitlement of the usage based product
+        //connector to add the activation based line in the entitlement
+        EntitlementLineVO lineForUsageProduct = entitlementVO.getLines()[0];
+        EntitlementLineVO lineForActivationProduct = new EntitlementLineVO();
+
+        lineForActivationProduct.setLineNumber(lineForUsageProduct.getLineNumber()+1);
+        lineForActivationProduct.setSKU(String.format("%s%s", lineForUsageProduct.getSKU(), ACTIVATION));
+        //dates are exactly the same as the usage based entitlement line
+        //TODO:What if the line is permanent??
+        lineForActivationProduct.setEffectiveDate(lineForUsageProduct.getExpirationDate());
+
+        //TODO:Quantity, will both always same? how the order is place in the Avangate system?
+        lineForActivationProduct.setQuantity(lineForUsageProduct.getQuantity());
+        EntitlementLineVO[] lines = new EntitlementLineVO[1];
+        lines[0] = lineForActivationProduct;
+
+		entitlementVO.addLine(lines[0]);
+    }
+
 }

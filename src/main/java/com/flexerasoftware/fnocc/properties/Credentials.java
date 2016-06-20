@@ -14,6 +14,7 @@ public class Credentials {
     public static String ENDPOINT;
     public static String PRODUCT_PACKAGING_SERVICE;
     public static String ENTITLEMENT_ORDER_SERVICE_ENDPOINT;
+    public static String MANAGE_DEVICE_SERVICE_ENDPOINT;
     public static String USER_ORG_HIERARCHY_SERVICE;
     public static String XMLENDPOINT;
     public static String BATCHENDPOINT;
@@ -41,6 +42,7 @@ public class Credentials {
             PASSWORD = properties.getProperty("PASSWORD");
             PRODUCT_PACKAGING_SERVICE = properties.getProperty("PRODUCT_PACKAGING_SERVICE");
             ENTITLEMENT_ORDER_SERVICE_ENDPOINT = properties.getProperty("ENTITLEMENT_ORDER_SERVICE_ENDPOINT");
+            MANAGE_DEVICE_SERVICE_ENDPOINT = properties.getProperty("MANAGE_DEVICE_SERVICE_ENDPOINT");
             USER_ORG_HIERARCHY_SERVICE = properties.getProperty("USER_ORG_HIERARCHY_SERVICE");
         }
         catch (FileNotFoundException e) {

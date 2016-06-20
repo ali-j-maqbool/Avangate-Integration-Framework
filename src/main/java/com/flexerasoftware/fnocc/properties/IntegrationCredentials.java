@@ -18,6 +18,7 @@ public class IntegrationCredentials {
     public String PRODUCT_PACKAGING_SERVICE = "";
     public String ENTITLEMENT_ORDER_SERVICE_ENDPOINT = "";
     public String USER_ORG_HIERARCHY_SERVICE = "";
+    public String MANAGE_DEVICE_SERVICE_ENDPOINT = "";
     public String XMLENDPOINT = "";
     public String BATCHENDPOINT = "";
     public String USER = "";
@@ -44,6 +45,7 @@ public class IntegrationCredentials {
             this.PASSWORD = properties.getProperty("PASSWORD");
             this.PRODUCT_PACKAGING_SERVICE = properties.getProperty("PRODUCT_PACKAGING_SERVICE");
             this.ENTITLEMENT_ORDER_SERVICE_ENDPOINT = properties.getProperty("ENTITLEMENT_ORDER_SERVICE_ENDPOINT");
+            this.MANAGE_DEVICE_SERVICE_ENDPOINT = properties.getProperty("MANAGE_DEVICE_SERVICE_ENDPOINT");
             this.USER_ORG_HIERARCHY_SERVICE = properties.getProperty("USER_ORG_HIERARCHY_SERVICE");
         }
         catch (FileNotFoundException e) {

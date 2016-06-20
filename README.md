@@ -34,4 +34,8 @@ The 78960 is the process id, use the following command to kill the process
 
 kill -9 78960
 
+OR DO the following
+
+kill `lsof -i -n -P | grep TCP | grep 8080 | tr -s " " "\n" | sed -n 2p`
+
 Restart the application
