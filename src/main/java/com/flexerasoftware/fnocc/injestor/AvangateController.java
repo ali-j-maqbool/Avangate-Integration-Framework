@@ -134,9 +134,6 @@ public class AvangateController {
                 return new InjestorResult("OK","Get request processed");
             }
 
-            this.secretKeyProperties = propertiesCTX.getBean(SecretKeyProperties.class);
-            this.materialiseProperties = materialiseCTX.getBean(MaterialiseProperties.class);
-
             avangateSvc = new AvangateService(lcn);
             if (avangateSvc.isValidAvangateSource(lcn.getParameterMap())){
                 if(!this.integrationFrameworkProperties.getDevMode()) {
@@ -174,6 +171,7 @@ public class AvangateController {
 
         try {
             requestInformation(edr);
+            this.secretKeyProperties = propertiesCTX.getBean(SecretKeyProperties.class);
 
             if (edr.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("EDR POST CALLED"));
@@ -185,7 +183,7 @@ public class AvangateController {
             avangateSvc = new AvangateService(edr);
 
             if (avangateSvc.isValidAvangateSource(edr.getParameterMap())){
-                avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF));
+                avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF),this.secretKeyProperties.getClsID());
             } else {
                 throw new Exception("Data received from an un-authorised source");
             }
@@ -194,6 +192,6 @@ public class AvangateController {
 			return new InjestorResult("ERROR", e.getMessage());
 		}
 
-        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF)));
+        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF),this.secretKeyProperties.getClsID()));
     }
 }

@@ -18,6 +18,11 @@
   ],
   "properties": [
     {
+      "name": "avangate.cls-id",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties"
+    },
+    {
       "name": "avangate.dev-secretkey",
       "type": "java.lang.String",
       "sourceType": "com.flexerasoftware.fnocc.configuration.SecretKeyProperties"

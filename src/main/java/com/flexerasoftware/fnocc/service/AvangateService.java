@@ -237,7 +237,7 @@ public class AvangateService {
         }
     }
 
-    public String[] processEDR(String orgName, String refNo) {
+    public String[] processEDR(String orgName, String refNo, boolean clsRequired) {
         ALMIntegrationService almSvc = new ALMIntegrationService();
         String[] s = new String[2];
         StringBuffer activationID = new StringBuffer();
@@ -246,19 +246,26 @@ public class AvangateService {
             activationID.append("<CODE>"+IDs+"</CODE>");
         }
         s[0] = activationID.toString();
-        s[1] = almSvc.getCLSID(orgName);
+
+        if(clsRequired) {
+            s[1] = almSvc.getCLSID(orgName);
+        }
 
         return s;
     }
 
-    public String acknowledgeReceiptEDR(String orgName, String refNo) {
+    public String acknowledgeReceiptEDR(String orgName, String refNo, boolean clsRequired) {
         validAvangateSource = true;
         if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
-            String[] s=processEDR(orgName,refNo);
+            String[] s=processEDR(orgName,refNo,clsRequired);
                 //TODO:GET INFO FOR EDR RECEIPT
-                hmacStr = String.format("%s<CODE>%s</CODE>", s[0], s[1]);
+                if(clsRequired) {
+                    hmacStr = String.format("%s<CODE>%s</CODE>", s[0], s[1]);
+                } else {
+                    hmacStr = String.format("%s",s[0]);
+                }
                 log.info(hmacStr);
             return hmacStr;
         } else {

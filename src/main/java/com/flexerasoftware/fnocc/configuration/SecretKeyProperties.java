@@ -1,4 +1,5 @@
 package com.flexerasoftware.fnocc.configuration;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.log4j.Logger;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -13,7 +14,16 @@ public class SecretKeyProperties {
 	private String devSecretkey;
 	private String testSecretkey;
 	private String prodSecretkey;
-	
+    private Boolean clsID;
+
+    public Boolean getClsID() {
+        setClsID(clsID);
+        return clsID.booleanValue();
+    }
+
+    public void setClsID(boolean clsID) {
+        this.clsID = clsID;
+    }
 	public String getDevSecretkey() {
 		return devSecretkey;
 	}
