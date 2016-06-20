@@ -255,7 +255,6 @@ public class AvangateService {
     }
 
     public String acknowledgeReceiptEDR(String orgName, String refNo, boolean clsRequired) {
-        validAvangateSource = true;
         if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
