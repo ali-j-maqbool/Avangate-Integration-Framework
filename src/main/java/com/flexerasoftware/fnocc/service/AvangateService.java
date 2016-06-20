@@ -109,7 +109,6 @@ public class AvangateService {
 		this.incomingData = ipn;
 		this.dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 		this.lineDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		
 	}
 	
 	/**
@@ -146,7 +145,7 @@ public class AvangateService {
                     sb.append(String.format("%s%s", valLength, val));
                     System.out.println(valLength + "-" + val);
                 }
-            }else{
+            } else {
                 hashFromData = data.get(key)[0];
             }
         }
@@ -164,13 +163,13 @@ public class AvangateService {
 				log.error("No Such Algorithm Exception",e);
 				validAvangateSource = false;
 			}
+
         validAvangateSource = generatedHashCode.equals(hashFromData);
     	return generatedHashCode.equals(hashFromData);
 	}
 	
 	public String acknowledgeReceipt() {
-		if (validAvangateSource)
-		{
+		if (validAvangateSource) {
             this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
 
             //now calculate the length of each string and concatenate
@@ -187,7 +186,6 @@ public class AvangateService {
 
 	    	sb.append(String.format("%s%s", dtToStr.getBytes().length, dtToStr  ));
 
-
 	    	AvangateHmacmd md5 = AvangateHmacmd.getInstance();
 			
 			try {
@@ -198,15 +196,13 @@ public class AvangateService {
 				log.error("Error has occurred.", e);
 			}
 			return hmacStr;
-		}else{		
+		} else {
 			return ("Data received did not pass validation test.");
 		}
 	}
 
     public String acknowledgeReceiptLCN() {
-
-        if (validAvangateSource)
-        {
+        if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
             Map<String, String[]> avangateData = incomingData.getParameterMap();
@@ -229,7 +225,7 @@ public class AvangateService {
                 log.error("Error has occurred.", e);
             }
             return hmacStr;
-        }else{
+        } else {
             return ("Data received did not pass validation test.");
         }
     }
@@ -249,8 +245,7 @@ public class AvangateService {
     }
 
     public String acknowledgeReceiptEDR(String orgName, String refNo) {
-        if (validAvangateSource)
-        {
+        if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
             String[] s=processEDR(orgName,refNo);
@@ -258,7 +253,7 @@ public class AvangateService {
                 hmacStr = String.format("%s<CODE>%s</CODE>", s[0], s[1]);
                 log.info(hmacStr);
             return hmacStr;
-        }else{
+        } else {
             return ("Data received did not pass validation test.");
         }
     }
@@ -277,7 +272,6 @@ public class AvangateService {
 		}
 
 		try {
-			
 			//map data
 			//NOTE: HAD TO ENABLE COUNTRY_CODE, IPN_LICENSE_REF, IPN_LICENSE_TYPE, IPN_LICENSE_EXP[] in Avangate system
 			

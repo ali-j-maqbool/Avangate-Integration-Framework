@@ -50,11 +50,17 @@ public class AvangateController {
         this.integrationFrameworkProperties = integrationFrameworkCTX.getBean(IntegrationFrameworkProperties.class);
         if(this.integrationFrameworkProperties.getDevMode()){
             StringBuilder sb = new StringBuilder();
-            Set<String> keySet = data.keySet();
-            for(String key: keySet) {
-            sb.append(String.format("[%s,%s] ",key,data.get(key)[0]));
-        }
-        log.info("REQUEST INFORMATION: "+sb.toString());
+            String[] keySet = data.keySet().toArray(new String[data.keySet().size()]);
+            sb.append("[");
+            for(int i=0;i<keySet.length;i++) {
+                sb.append(String.format("%s=%s",keySet[i],data.get(keySet[i])[0]));
+                if(i==keySet.length-1) {
+                    sb.append("]");
+                }else{
+                    sb.append(",\n");
+                }
+            }
+            log.info("REQUEST INFORMATION: "+sb.toString());
         }
     }
 	
@@ -75,27 +81,27 @@ public class AvangateController {
 
             requestInformation(ipn.getParameterMap());
 
-			if (ipn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
+            if (ipn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
 				log.info(String.format("IPN POST CALLED"));
-			}else if (ipn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
+			} else if (ipn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
 				log.info(String.format("IPN GET CALLED"));
 				return new InjestorResult("OK","Get request processed");
 			}
-				avangateSvc = new AvangateService(ipn);
-                avangateSvc.acknowledgeReceipt();
+            avangateSvc = new AvangateService(ipn);
+            avangateSvc.acknowledgeReceipt();
 
             if (avangateSvc.isValidAvangateSource(ipn.getParameterMap())){
 				avangateSvc.process();
 				avangateSvc.acknowledgeReceipt();
-			}else{
-					throw new Exception("Data received from an un-authorised source");
+			} else {
+                throw new Exception("Data received from an un-authorised source");
 			}
 		} catch (Exception e) {
-				log.error("Error has occurred.", e);
-				return new InjestorResult("ERROR", e.getMessage());
+            log.error("Error has occurred.", e);
+            return new InjestorResult("ERROR", e.getMessage());
 		}
+
 		return new InjestorResult("OK",avangateSvc.acknowledgeReceipt());
-	
 	}
 	
 	/**
@@ -112,10 +118,9 @@ public class AvangateController {
         try {
             requestInformation(lcn.getParameterMap());
 
-
             if (lcn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("LCN POST CALLED"));
-            }else if (lcn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
+            } else if (lcn.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
                 log.info(String.format("LCN GET CALLED"));
                 return new InjestorResult("OK","Get request processed");
             }
@@ -128,9 +133,8 @@ public class AvangateController {
                 if(!this.integrationFrameworkProperties.getDevMode()) {
                     avangateSvc.process();
                 }
-
                 avangateSvc.acknowledgeReceiptLCN();
-            }else{
+            } else {
                 throw new Exception("Data received from an un-authorised source");
             }
 
@@ -142,6 +146,7 @@ public class AvangateController {
 			log.error("Error has occurred.", e);
 			return new InjestorResult("ERROR", e.getMessage());
 		}
+
         return new InjestorResult("OK",avangateSvc.acknowledgeReceiptLCN());
     }
 	
@@ -163,7 +168,7 @@ public class AvangateController {
 
             if (edr.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("EDR POST CALLED"));
-            }else if (edr.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
+            } else if(edr.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
                 log.info(String.format("EDR GET CALLED"));
                 return new InjestorResult("OK","Get request processed");
             }
@@ -172,13 +177,14 @@ public class AvangateController {
 
             if (avangateSvc.isValidAvangateSource(edr.getParameterMap())){
                 avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF"));
-            }else{
+            } else {
                 throw new Exception("Data received from an un-authorised source");
             }
         } catch (Exception e) {
 			log.error("Error has occurred.", e);
 			return new InjestorResult("ERROR", e.getMessage());
 		}
+
         return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF")));
     }
 }
