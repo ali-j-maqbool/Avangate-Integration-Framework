@@ -169,7 +169,6 @@ public class AvangateController {
             }
 
             avangateSvc = new AvangateService(edr);
-            avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF"));
 
             if (avangateSvc.isValidAvangateSource(edr.getParameterMap())){
                 avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF"));
