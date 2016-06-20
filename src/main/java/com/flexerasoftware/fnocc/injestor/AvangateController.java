@@ -31,8 +31,11 @@ public class AvangateController {
 	private SecretKeyProperties secretKeyProperties;
 	private MaterialiseProperties materialiseProperties;
     private IntegrationFrameworkProperties integrationFrameworkProperties;
-	
-	ApplicationContext propertiesCTX = new AnnotationConfigApplicationContext(SecretKeyProperties.class);
+    private static final String COMPANY = "COMPANY";
+    private static final String LICENSE_REF = "LICENSE_REF";
+
+
+    ApplicationContext propertiesCTX = new AnnotationConfigApplicationContext(SecretKeyProperties.class);
 	ApplicationContext materialiseCTX = new AnnotationConfigApplicationContext(MaterialiseProperties.class);
     ApplicationContext integrationFrameworkCTX = new AnnotationConfigApplicationContext(IntegrationFrameworkProperties.class);
 
@@ -182,7 +185,7 @@ public class AvangateController {
             avangateSvc = new AvangateService(edr);
 
             if (avangateSvc.isValidAvangateSource(edr.getParameterMap())){
-                avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF"));
+                avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF));
             } else {
                 throw new Exception("Data received from an un-authorised source");
             }
@@ -191,6 +194,6 @@ public class AvangateController {
 			return new InjestorResult("ERROR", e.getMessage());
 		}
 
-        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter("COMPANY"), edr.getParameter("LICENSE_REF")));
+        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF)));
     }
 }
