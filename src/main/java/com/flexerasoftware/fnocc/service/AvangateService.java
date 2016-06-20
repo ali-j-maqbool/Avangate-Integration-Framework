@@ -89,8 +89,7 @@ public class AvangateService {
     public static final String ACTIVATION = "_ACTIVATION";
 	public static final String IPN_LICENSE_EXP = "IPN_LICENSE_EXP[]";
 
-
-	static Logger log = Logger.getLogger(AvangateService.class.getName());
+    static Logger log = Logger.getLogger(AvangateService.class.getName());
 	
 	private SecretKeyProperties secretKeyProperties;
 	private IntegrationFrameworkProperties integrationFrameworkProperties;
@@ -294,7 +293,7 @@ public class AvangateService {
 			
 			Map<String, String[]> avangateData = incomingData.getParameterMap();
 
-            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase("REFUND")) {
+            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
                 processRefund(avangateData);
                 return;
             }
