@@ -79,6 +79,8 @@ public class AvangateService {
 
     private static final String DATE = "DATE";
 
+    private static final String ORDERSTATUS = "ORDERSTATUS";
+
     public static final String ACTIVATION = "_ACTIVATION";
 	public static final String IPN_LICENSE_EXP = "IPN_LICENSE_EXP[]";
 
@@ -279,67 +281,66 @@ public class AvangateService {
 			// TODO: PROCESS THE INCOMING DATA
 			
 			Map<String, String[]> avangateData = incomingData.getParameterMap();
-			
-			//validate mandatory fields
-			avangateData = validateOrderData(avangateData);
-			if (avangateData.containsKey(MISSING_FIELDS_FOUND)){
-				throw new Exception(String.format("Missing data in the request %s", avangateData.get(MISSING_FIELDS_FOUND)[0]));
-			}
-						
-			String s = incomingData.getParameter(IPN_PID);
-			
-			String ipnLicenseType = avangateData.get(IPN_LICENSE_TYPE)[0];
-			
-			if (ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR)){
-				
-			}else if (ipnLicenseType.equals(LICENSE_TYPE_RENEW)) {
-				
-			}else{
-				throw new Exception("Only REGULAR and RENEW IPN license types expected, Transaction aborted");
-			}
 
-			AccountVO account = new AccountVO();
-			account.setId(avangateData.get(COMPANY)[0]);
-			account.setName(avangateData.get(COMPANY)[0]);
-			UserVO[] users = new UserVO[1];
-			UserVO user = new UserVO();
-			user.setAccountID(account.getId());
-			user.setEmail(avangateData.get(CUSTOMEREMAIL)[0]);
-			user.setFirstName(avangateData.get(FIRSTNAME)[0]);
-			user.setLastName(avangateData.get(LASTNAME)[0]);
-			AddressVO address = new AddressVO();
-			address.setAddress1(avangateData.get(ADDRESS1)[0]);
-			address.setAddress2(avangateData.get(ADDRESS2)[0]);
-			address.setCountry(avangateData.get(COUNTRY_CODE)[0]);
+            if(!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase("COMPLETE")) {
+                //validate mandatory fields
+                avangateData = validateOrderData(avangateData);
+                if (avangateData.containsKey(MISSING_FIELDS_FOUND)) {
+                    throw new Exception(String.format("Missing data in the request %s", avangateData.get(MISSING_FIELDS_FOUND)[0]));
+                }
 
-			address.setCity(avangateData.get(CITY)[0]);
-			address.setState(NOT_US_OR_CANADA);
-			address.setZipcode(avangateData.get(ZIPCODE)[0]);
-			user.setAddress(address);
-			users[0] = user;
-			account.setUsers(users);
-			EntitlementVO entitlement = new EntitlementVO();
-			entitlement.setAccount(account);
-			entitlement.setId(avangateData.get(IPN_LICENSE_REF)[0]);
-			entitlement.setOrderDate(new Date());
-			EntitlementLineVO line = new EntitlementLineVO();
-            line.setLineNumber(1);
-			line.setSKU(avangateData.get(IPN_PID)[0]);
-			//TODO:To be changed to IPN_LICENSE_START
-			//line.setExpirationDate(avangateData.get(IPN_LICENSE_START)[0]);
+                String s = incomingData.getParameter(IPN_PID);
 
-			line.setEffectiveDate(new Date());
-			line.setExpirationDate(lineDateFormat.parse(avangateData.get(IPN_LICENSE_EXP)[0]));
-			line.setQuantity(Integer.parseInt(avangateData.get(IPN_QTY)[0]));
-			EntitlementLineVO[] lines = new EntitlementLineVO[1];
-			lines[0] = line;
-			entitlement.setLines(lines);		
-			
-			//process the order			
-			processAvangateOrder(entitlement);		
-			
-			
+                String ipnLicenseType = avangateData.get(IPN_LICENSE_TYPE)[0];
 
+                if (ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR)) {
+
+                } else if (ipnLicenseType.equals(LICENSE_TYPE_RENEW)) {
+
+                } else {
+                    throw new Exception("Only REGULAR and RENEW IPN license types expected, Transaction aborted");
+                }
+
+                AccountVO account = new AccountVO();
+                account.setId(avangateData.get(COMPANY)[0]);
+                account.setName(avangateData.get(COMPANY)[0]);
+                UserVO[] users = new UserVO[1];
+                UserVO user = new UserVO();
+                user.setAccountID(account.getId());
+                user.setEmail(avangateData.get(CUSTOMEREMAIL)[0]);
+                user.setFirstName(avangateData.get(FIRSTNAME)[0]);
+                user.setLastName(avangateData.get(LASTNAME)[0]);
+                AddressVO address = new AddressVO();
+                address.setAddress1(avangateData.get(ADDRESS1)[0]);
+                address.setAddress2(avangateData.get(ADDRESS2)[0]);
+                address.setCountry(avangateData.get(COUNTRY_CODE)[0]);
+
+                address.setCity(avangateData.get(CITY)[0]);
+                address.setState(NOT_US_OR_CANADA);
+                address.setZipcode(avangateData.get(ZIPCODE)[0]);
+                user.setAddress(address);
+                users[0] = user;
+                account.setUsers(users);
+                EntitlementVO entitlement = new EntitlementVO();
+                entitlement.setAccount(account);
+                entitlement.setId(avangateData.get(IPN_LICENSE_REF)[0]);
+                entitlement.setOrderDate(new Date());
+                EntitlementLineVO line = new EntitlementLineVO();
+                line.setLineNumber(1);
+                line.setSKU(avangateData.get(IPN_PID)[0]);
+                //TODO:To be changed to IPN_LICENSE_START
+                //line.setExpirationDate(avangateData.get(IPN_LICENSE_START)[0]);
+
+                line.setEffectiveDate(new Date());
+                line.setExpirationDate(lineDateFormat.parse(avangateData.get(IPN_LICENSE_EXP)[0]));
+                line.setQuantity(Integer.parseInt(avangateData.get(IPN_QTY)[0]));
+                EntitlementLineVO[] lines = new EntitlementLineVO[1];
+                lines[0] = line;
+                entitlement.setLines(lines);
+
+                //process the order
+                processAvangateOrder(entitlement);
+            }
 		} catch (Exception e) {
 			log.error("Error has occurred.", e);
 		}

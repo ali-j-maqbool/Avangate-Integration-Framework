@@ -46,7 +46,13 @@ public class AvangateController {
 		return new InjestorResult("OK", "FNO - AVANGATE END-POINT RUNNING");
 	}
 	
-	public void requestInformation(Map<String,String[]> data){
+	public void requestInformation(HttpServletRequest request){
+        Map<String,String[]> data = request.getParameterMap();
+        String ipAddress = request.getHeader("X-FORWARDED-FOR");
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
+        }
+        System.out.println("ipAddress:" + ipAddress);
         this.integrationFrameworkProperties = integrationFrameworkCTX.getBean(IntegrationFrameworkProperties.class);
         if(this.integrationFrameworkProperties.getDevMode()){
             StringBuilder sb = new StringBuilder();
@@ -55,7 +61,7 @@ public class AvangateController {
             for(int i=0;i<keySet.length;i++) {
                 sb.append(String.format("%s=%s",keySet[i],data.get(keySet[i])[0]));
                 if(i==keySet.length-1) {
-                    sb.append("]");
+                    sb.append("ipAddress="+ipAddress+"]");
                 }else{
                     sb.append(",\n");
                 }
@@ -79,7 +85,7 @@ public class AvangateController {
 		try {
             this.integrationFrameworkProperties = integrationFrameworkCTX.getBean(IntegrationFrameworkProperties.class);
 
-            requestInformation(ipn.getParameterMap());
+            requestInformation(ipn);
 
             if (ipn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
 				log.info(String.format("IPN POST CALLED"));
@@ -116,7 +122,7 @@ public class AvangateController {
         AvangateService avangateSvc = null;
 
         try {
-            requestInformation(lcn.getParameterMap());
+            requestInformation(lcn);
 
             if (lcn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("LCN POST CALLED"));
@@ -164,7 +170,7 @@ public class AvangateController {
         AvangateService avangateSvc = null;
 
         try {
-            requestInformation(edr.getParameterMap());
+            requestInformation(edr);
 
             if (edr.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("EDR POST CALLED"));
