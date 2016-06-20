@@ -54,8 +54,12 @@ implements IntegrationService {
 
     //TODO:BEAN for managed device
     private String getManagedDeviceServiceEndpoint() {
-        return "";
+        if (null != this.creds) {
+            return this.creds.MANAGE_DEVICE_SERVICE_ENDPOINT;
+        }
+        return Credentials.MANAGE_DEVICE_SERVICE_ENDPOINT;
     }
+
 
     private String getEntitlementServiceEndpoint() {
         if (null != this.creds) {
@@ -500,6 +504,65 @@ implements IntegrationService {
         catch(Exception e) {
             log.error("Error occurred updating entitlement line", e);
         }
+    }
+
+    public void setEntitleLineStatus(StateType status, String activationID){
+        EntitlementOrderServiceInterface service = null;
+
+        // Instantiate locator
+        EntitlementOrderServiceLocator locator = new EntitlementOrderServiceLocator();
+
+        try {
+
+            // Get the handle to EntitlementService
+            service = locator.getEntitlementOrderService(new java.net.URL(this.getEntitlementServiceEndpoint()));
+
+            SetLineItemStateRequestType cpRequest = new SetLineItemStateRequestType();
+
+            EntitlementLineItemIdentifierType liIdentifier1 = new EntitlementLineItemIdentifierType();
+            EntitlementLineItemPKType entlineItemPk = new EntitlementLineItemPKType();
+            entlineItemPk.setActivationId(activationID);
+            liIdentifier1.setPrimaryKeys(entlineItemPk);
+
+            LineItemStateDataType liState1 = new LineItemStateDataType();
+            liState1.setLineItemIdentifier(liIdentifier1);
+            liState1.setStateToSet(status);
+
+            // Set this to true if we want to deploy all the child items of this line item as well
+            // otherwise, no need to set this explictly to FALSE.
+            liState1.setIncludeChildItems(Boolean.TRUE);
+
+            LineItemStateDataType[] liStateArray = new LineItemStateDataType[1];
+            liStateArray[0] = liState1;
+
+            cpRequest.setLineItem(liStateArray);
+
+            //setup credentials
+            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
+            credentials.setUsername(this.getUser());
+            credentials.setPassword(this.getPassword());
+            this.setServiceCredentials(service);
+
+
+            // invoke webservice and get the response
+            SetLineItemStateResponseType response = service.setLineItemState(cpRequest);
+
+            // Check the status in the response
+            if (response.getStatusInfo().getStatus().toString().equals(StatusType.SUCCESS.toString())) {
+               log.info("LineItem State successfully changed ");
+            }else {
+                log.info("set lineItem state failed failed.");
+                log.info("Reason for Failure -> " + response.getStatusInfo().getReason());
+                FailedLineItemStateDataListType failedData = response.getFailedData();
+                FailedLineItemStateDataType[] failedArray = failedData.getFailedLineItem();
+                for (int ii = 0; failedArray != null && ii < failedArray.length; ii++)
+                    log.info("set lineItem state failed failed due to reason " + failedArray[ii].getReason());
+            }
+
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -625,7 +688,7 @@ implements IntegrationService {
             ManageDeviceServiceInterface service = null;
             ManageDeviceServiceLocator locator = new ManageDeviceServiceLocator();
             GetAutoProvisionedServerRequest gapsr = new GetAutoProvisionedServerRequest(orgName);
-            service = locator.getManageDeviceService(new URL("https://flex1168-fno-uat.flexnetoperations.com/flexnet/services/ManageDeviceService?wsdl"));
+            service = locator.getManageDeviceService(new URL(this.getManagedDeviceServiceEndpoint()));
             ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
             credentials.setUsername(this.getUser());
             credentials.setPassword(this.getPassword());

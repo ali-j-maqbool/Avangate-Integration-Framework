@@ -12,6 +12,7 @@ import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 
 import com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties;
+import com.flexnet.operations.webservices.StateType;
 import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -80,6 +81,10 @@ public class AvangateService {
     private static final String DATE = "DATE";
 
     private static final String ORDERSTATUS = "ORDERSTATUS";
+
+    private static final String COMPLETE = "COMPLETE";
+
+    private static final String REFUND = "REFUND";
 
     public static final String ACTIVATION = "_ACTIVATION";
 	public static final String IPN_LICENSE_EXP = "IPN_LICENSE_EXP[]";
@@ -247,6 +252,7 @@ public class AvangateService {
     }
 
     public String acknowledgeReceiptEDR(String orgName, String refNo) {
+        validAvangateSource = true;
         if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
@@ -282,7 +288,12 @@ public class AvangateService {
 			
 			Map<String, String[]> avangateData = incomingData.getParameterMap();
 
-            if(!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase("COMPLETE")) {
+            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase("REFUND")) {
+                processRefund(avangateData);
+                return;
+            }
+
+            if(!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(COMPLETE)) {
                 //validate mandatory fields
                 avangateData = validateOrderData(avangateData);
                 if (avangateData.containsKey(MISSING_FIELDS_FOUND)) {
@@ -345,8 +356,42 @@ public class AvangateService {
 			log.error("Error has occurred.", e);
 		}
 	}
-	
-	private Map<String, String[]> validateOrderData(Map<String, String[]> avangateData){
+
+    public void processRefund(Map<String,String[]> request) throws Exception {
+        if (incomingData == null) {
+            throw new Exception("No data set.");
+        }
+        ALMIntegrationService almSvc = new ALMIntegrationService();
+        String activationID = "";
+
+        //recieve data find right entitlement iterate through each line and change status to inactive
+        EntitlementVO entitlement = new EntitlementVO();
+        entitlement.setId(request.get(IPN_LICENSE_REF)[0]);
+        EntitlementDataType[] edt = almSvc.getEntitlement(entitlement);
+
+        if(edt[0]==null){
+            throw new Exception("Entitlement not found");
+        } else {
+            if(edt[0].getSimpleEntitlement().getLineItems()==null) {
+                throw new Exception("Entitlement lines not found");
+            } else {
+                for(EntitlementLineItemDataType e : edt[0].getSimpleEntitlement().getLineItems()){
+                    e.setState(StateType.INACTIVE);
+
+//                    almSvc.updateEntitlementLine(e , edt[0].getSimpleEntitlement().getEntitlementId().getId());
+                    almSvc.setEntitleLineStatus(StateType.INACTIVE,e.getActivationId().getId());
+                }
+            }
+        }
+
+    }
+
+
+
+
+
+
+        private Map<String, String[]> validateOrderData(Map<String, String[]> avangateData){
 		
 		StringBuffer missingFields = new StringBuffer();
 

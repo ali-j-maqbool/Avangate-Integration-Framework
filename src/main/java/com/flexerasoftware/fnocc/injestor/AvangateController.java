@@ -94,7 +94,7 @@ public class AvangateController {
 				return new InjestorResult("OK","Get request processed");
 			}
             avangateSvc = new AvangateService(ipn);
-            avangateSvc.acknowledgeReceipt();
+            avangateSvc.process();
 
             if (avangateSvc.isValidAvangateSource(ipn.getParameterMap())){
 				avangateSvc.process();
