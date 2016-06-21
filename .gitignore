@@ -13,6 +13,7 @@
 *.ear
 *.out
 /.idea
+.idea
 target
 project/target
 .target

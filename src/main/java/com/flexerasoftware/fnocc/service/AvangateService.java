@@ -122,19 +122,17 @@ public class AvangateService {
 	 * 
 	 * @return
 	 */
-	public boolean isValidAvangateSource(Map<String,String[]> data){
+	public boolean isValidAvangateSource(Map<String,String[]> data) {
         //now calculate the length of each string and concatenate
-		this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
+        this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
         this.integrationFrameworkProperties = integFrmwrkCTX.getBean(IntegrationFrameworkProperties.class);
 
-        if (this.integrationFrameworkProperties.getDevMode()) {return true;}
-
-		AvangateHmacmd md5 = AvangateHmacmd.getInstance();
-    	StringBuffer sb = new StringBuffer();
-    	String generatedHashCode="";
-        String hashFromData ="";
+        AvangateHmacmd md5 = AvangateHmacmd.getInstance();
+        StringBuffer sb = new StringBuffer();
+        String generatedHashCode = "";
+        String hashFromData = "";
         Set<String> keySet = data.keySet();
-        for(String key: keySet) {
+        for (String key : keySet) {
             if (!key.equals("HASH")) {
                 int valLength = 0;
                 String val = data.get(key)[0];
@@ -155,25 +153,29 @@ public class AvangateService {
                 hashFromData = data.get(key)[0];
             }
         }
-    	
-    		//String dataforhmac = "192016-06-01 12:22:097100003702138COMPLETE13Wire transfer4John5Smith9BV-66778800000015101 Main Street08New York8New York650036524United States of America12951-121-2121019johnsmith@email.com4John5Smith015101 Main Street08New York8New York650036524United States of America12951-121-212114213.233.121.503USD1116Software program5PM_11011529.0040.00040.0000529.00534.0045.0043.381420050303123434";
-    		//System.out.println("The hash code is:"+md5.calculatehmac(dataforhmac, "AABBCCDDEEFF"));
-    		try {
-    			generatedHashCode = md5.calculatehmac(sb.toString().trim(), this.secretKeyProperties.getTestSecretkey());
-    			System.out.println("The hash code is:"+generatedHashCode);
-			} catch (InvalidKeyException e) {
-				log.error("Error ocurred invalid key",e);
-				validAvangateSource = false;
-			} catch (NoSuchAlgorithmException e) {
-				e.printStackTrace();
-				log.error("No Such Algorithm Exception",e);
-				validAvangateSource = false;
-			}
+
+        //String dataforhmac = "192016-06-01 12:22:097100003702138COMPLETE13Wire transfer4John5Smith9BV-66778800000015101 Main Street08New York8New York650036524United States of America12951-121-2121019johnsmith@email.com4John5Smith015101 Main Street08New York8New York650036524United States of America12951-121-212114213.233.121.503USD1116Software program5PM_11011529.0040.00040.0000529.00534.0045.0043.381420050303123434";
+        //System.out.println("The hash code is:"+md5.calculatehmac(dataforhmac, "AABBCCDDEEFF"));
+        try {
+            generatedHashCode = md5.calculatehmac(sb.toString().trim(), this.secretKeyProperties.getTestSecretkey());
+            System.out.println("The hash code is:" + generatedHashCode);
+        } catch (InvalidKeyException e) {
+            log.error("Error ocurred invalid key", e);
+            validAvangateSource = false;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            log.error("No Such Algorithm Exception", e);
+            validAvangateSource = false;
+        }
 
         validAvangateSource = generatedHashCode.equals(hashFromData);
-    	return generatedHashCode.equals(hashFromData);
-	}
-	
+        if (this.integrationFrameworkProperties.getDevMode()) {
+            validAvangateSource = true;
+            return true;
+        } else {
+            return generatedHashCode.equals(hashFromData);
+        }
+    }
 	public String acknowledgeReceipt() {
 		if (validAvangateSource) {
             this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
@@ -292,11 +294,11 @@ public class AvangateService {
 			// TODO: PROCESS THE INCOMING DATA
 			
 			Map<String, String[]> avangateData = incomingData.getParameterMap();
-
-            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
-                processRefund(avangateData);
-                return;
-            }
+            //TODO took out refund feature
+//            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
+//                processRefund(avangateData);
+//                return;
+//            }
 
             if(!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(COMPLETE)) {
                 //validate mandatory fields
