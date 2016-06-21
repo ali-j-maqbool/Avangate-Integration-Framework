@@ -295,10 +295,10 @@ public class AvangateService {
 			
 			Map<String, String[]> avangateData = incomingData.getParameterMap();
             //TODO took out refund feature
-//            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
-//                processRefund(avangateData);
-//                return;
-//            }
+            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
+                processRefund(avangateData);
+                return;
+            }
 
             if(!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(COMPLETE)) {
                 //validate mandatory fields
@@ -534,7 +534,8 @@ public class AvangateService {
         lineForActivationProduct.setSKU(String.format("%s%s", lineForUsageProduct.getSKU(), ACTIVATION));
         //dates are exactly the same as the usage based entitlement line
         //TODO:What if the line is permanent??
-        lineForActivationProduct.setEffectiveDate(lineForUsageProduct.getExpirationDate());
+        lineForActivationProduct.setEffectiveDate(lineForUsageProduct.getEffectiveDate());
+        lineForActivationProduct.setExpirationDate(lineForUsageProduct.getExpirationDate());
 
         //TODO:Quantity, will both always same? how the order is place in the Avangate system?
         lineForActivationProduct.setQuantity(lineForUsageProduct.getQuantity());
