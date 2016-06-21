@@ -169,7 +169,7 @@ implements IntegrationService {
         try {
             UserOrgHierarchyServiceLocator locator = new UserOrgHierarchyServiceLocator();
             UserOrgHierarchyServiceInterface service = locator.getUserOrgHierarchyService(new URL(this.getUserOrgServiceEndpoint()));
-            this.setServiceCredentials((Remote) service);
+            this.setServiceCredentials(service);
             CreateUserRequestType req = new CreateUserRequestType();
             CreateUserDataType[] userRecs = new CreateUserDataType[1];
             CreateUserDataType ALMuser = new CreateUserDataType();
@@ -428,8 +428,7 @@ implements IntegrationService {
                 }
             }
         }
-        user.setAddress(address);
-        return user;
+        return null;
     }
 
     public void updateEntitlementLine( EntitlementLineItemDataType entLine, String entId) throws Exception{
