@@ -295,10 +295,10 @@ public class AvangateService {
 			
 			Map<String, String[]> avangateData = incomingData.getParameterMap();
             //TODO took out refund feature
-//            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
-//                processRefund(avangateData);
-//                return;
-//            }
+            if(avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
+                processRefund(avangateData);
+                return;
+            }
 
             if(!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(COMPLETE)) {
                 //validate mandatory fields
@@ -357,7 +357,7 @@ public class AvangateService {
                 entitlement.setLines(lines);
 
                 //process the order
-                processAvangateOrder(entitlement);
+                processAvangateOrder(entitlement,ipnLicenseType);
             }
 		} catch (Exception e) {
 			log.error("Error has occurred.", e);
@@ -445,10 +445,11 @@ public class AvangateService {
 	}
 
 
-    public void processAvangateOrder(EntitlementVO entitlement){
+    public void processAvangateOrder(EntitlementVO entitlement, String ipnLicenseType){
 
         try{
             ALMIntegrationService almSvc = new ALMIntegrationService();
+
 
             if (entitlement.getAccount().getUsers().length > 0){
                 log.warn(String.format(
@@ -458,6 +459,12 @@ public class AvangateService {
 
             //does entitlement exist, create/update
             EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
+
+            if(ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_RENEW) && null == entData){
+                StringBuilder sb = new StringBuilder();
+                sb.append(String.format("Cannot renew entitlement as entitlement [%s] does not exist",entitlement.getId()));
+                throw new Exception(sb.toString());
+            }
 
             if (null == entData){
                 createNewEntitlement(entitlement, almSvc);
@@ -482,14 +489,15 @@ public class AvangateService {
         //check if this user exist in the FNO Cloud
         //UserVO userVOFNO = almSvc.getUserWithLinkedOrgs(userVOAvangate);
 
-        if (null == acctVO.getAddress()) {
+        if (null == userVOAvangate) {
 			//create account
 			almSvc.addAccount(entitlement.getAccount());
 			//if user exist in other organisation in FNO try to link to the new org now
-			if (userVOAvangate.getOrgsLinked().size() > 0 &&
-					!userVOAvangate.getOrgsLinked().contains(entitlement.getAccount().getName())) {
+            UserVO user = entitlement.getAccount().getUsers()[0];
+			if (null != user.getOrgsLinked() && user.getOrgsLinked().size() > 0 &&
+					!user.getOrgsLinked().contains(entitlement.getAccount().getName())) {
 				//link new organisation
-				almSvc.linkUserToOrganisation(userVOAvangate, entitlement.getAccount().getName());
+				almSvc.linkUserToOrganisation(user, entitlement.getAccount().getName());
 			} else {
 				//create user, only one user is expected
 				almSvc.addUser(entitlement.getAccount().getUsers()[0]);
@@ -534,7 +542,8 @@ public class AvangateService {
         lineForActivationProduct.setSKU(String.format("%s%s", lineForUsageProduct.getSKU(), ACTIVATION));
         //dates are exactly the same as the usage based entitlement line
         //TODO:What if the line is permanent??
-        lineForActivationProduct.setEffectiveDate(lineForUsageProduct.getExpirationDate());
+        lineForActivationProduct.setEffectiveDate(lineForUsageProduct.getEffectiveDate());
+        lineForActivationProduct.setExpirationDate(lineForUsageProduct.getExpirationDate());
 
         //TODO:Quantity, will both always same? how the order is place in the Avangate system?
         lineForActivationProduct.setQuantity(lineForUsageProduct.getQuantity());
