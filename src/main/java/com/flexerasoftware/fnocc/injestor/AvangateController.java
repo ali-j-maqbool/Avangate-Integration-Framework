@@ -4,6 +4,7 @@
 package com.flexerasoftware.fnocc.injestor;
 
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 import com.flexerasoftware.fnocc.configuration.IntegrationFrameworkProperties;
@@ -55,22 +56,23 @@ public class AvangateController {
         if (ipAddress == null) {
             ipAddress = request.getRemoteAddr();
         }
-        System.out.println("ipAddress:" + ipAddress);
+
+        log.info("Request received from ipAddress:" + ipAddress);
         this.integrationFrameworkProperties = integrationFrameworkCTX.getBean(IntegrationFrameworkProperties.class);
-        if(this.integrationFrameworkProperties.getDevMode()){
-            StringBuilder sb = new StringBuilder();
-            String[] keySet = data.keySet().toArray(new String[data.keySet().size()]);
-            sb.append("[");
-            for(int i=0;i<keySet.length;i++) {
-                sb.append(String.format("%s=%s",keySet[i],data.get(keySet[i])[0]));
-                if(i==keySet.length-1) {
-                    sb.append("ipAddress="+ipAddress+"]");
-                }else{
-                    sb.append(",\n");
-                }
+
+        StringBuilder sb = new StringBuilder();
+        String[] keySet = data.keySet().toArray(new String[data.keySet().size()]);
+        sb.append("[");
+        for(int i=0;i<keySet.length;i++) {
+            sb.append(String.format("%s=%s",keySet[i],data.get(keySet[i])[0]));
+            if(i==keySet.length-1) {
+                sb.append("ipAddress="+ipAddress+"]");
+            }else{
+                sb.append(",\n");
             }
-            log.info("REQUEST INFORMATION: "+sb.toString());
         }
+        log.info("REQUEST INFORMATION: "+sb.toString());
+
     }
 	
 	/**
@@ -84,11 +86,11 @@ public class AvangateController {
 	public InjestorResult processIPN(HttpServletRequest ipn) {
 		
 		AvangateService avangateSvc = null;
+        StringBuffer returnMsg = new StringBuffer();
 		
 		try {
             this.integrationFrameworkProperties = integrationFrameworkCTX.getBean(IntegrationFrameworkProperties.class);
 
-            requestInformation(ipn);
 
             if (ipn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
 				log.info(String.format("IPN POST CALLED"));
@@ -96,20 +98,32 @@ public class AvangateController {
 				log.info(String.format("IPN GET CALLED"));
 				return new InjestorResult("OK","Get request processed");
 			}
+
+            //print request
+            requestInformation(ipn);
+
             avangateSvc = new AvangateService(ipn);
 
             if (avangateSvc.isValidAvangateSource(ipn.getParameterMap())){
-				avangateSvc.process();
-				avangateSvc.acknowledgeReceipt();
+				avangateSvc.processIPN();
 			} else {
-                throw new Exception("Data received from an un-authorised source");
-			}
+                returnMsg.append("Data received from an un-authorised source");
+                log.error(returnMsg);
+
+            }
 		} catch (Exception e) {
             log.error("Error has occurred.", e);
-            return new InjestorResult("ERROR", e.getMessage());
+            returnMsg.append(String.format("Error occurred %s", e.getMessage()));
 		}
 
-		return new InjestorResult("OK",avangateSvc.acknowledgeReceipt());
+        if (returnMsg.toString().trim().length() > 0){
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+            String dtToStr = dateFormat.format(new Date());
+            log.error(String.format("<EPAYMENT>%s|%s</EPAYMENT>", dtToStr, returnMsg.toString()));
+            return new InjestorResult("Error",String.format("<EPAYMENT>%s|%s</EPAYMENT>", dtToStr, returnMsg.toString()));
+        }else {
+            return new InjestorResult("OK", avangateSvc.acknowledgeReceipt());
+        }
 	}
 	
 	/**
@@ -122,9 +136,10 @@ public class AvangateController {
 	@RequestMapping(value="/LCN", method= {RequestMethod.POST, RequestMethod.GET} )
 	public InjestorResult processLCN(HttpServletRequest lcn) {
         AvangateService avangateSvc = null;
+        StringBuffer returnMsg = new StringBuffer();
 
         try {
-            requestInformation(lcn);
+
 
             if (lcn.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
                 log.info(String.format("LCN POST CALLED"));
@@ -133,26 +148,27 @@ public class AvangateController {
                 return new InjestorResult("OK","Get request processed");
             }
 
+            requestInformation(lcn);
+
             avangateSvc = new AvangateService(lcn);
             if (avangateSvc.isValidAvangateSource(lcn.getParameterMap())){
-                if(!this.integrationFrameworkProperties.getDevMode()) {
-                    avangateSvc.process();
-                }
-                avangateSvc.acknowledgeReceiptLCN();
+                avangateSvc.processLCN();
             } else {
-                throw new Exception("Data received from an un-authorised source");
+                returnMsg.append("Data received from an un-authorised source");
             }
-
-			//ALMOrderController controller = new ALMOrderController(
-			//		new AvangateService(body.getBytes()), mockService);
-			//controller.process();
-			
 		} catch (Exception e) {
-			log.error("Error has occurred.", e);
-			return new InjestorResult("ERROR", e.getMessage());
+            returnMsg.append(String.format("Error occurred %s", e.getMessage()));
 		}
 
-        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptLCN());
+        if (returnMsg.toString().trim().length() > 0){
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+            String dtToStr = dateFormat.format(new Date());
+            log.error(String.format("<EPAYMENT>%s|%s</EPAYMENT>", dtToStr, returnMsg.toString()));
+
+            return new InjestorResult("Error", String.format("<EPAYMENT>%s|%s</EPAYMENT>", dtToStr, returnMsg.toString()));
+        }else {
+            return new InjestorResult("OK", avangateSvc.acknowledgeReceiptLCN());
+        }
     }
 	
 	
@@ -167,30 +183,47 @@ public class AvangateController {
 	@RequestMapping(value="/EDR", method= {RequestMethod.POST, RequestMethod.GET})
 	public InjestorResult processElectronicDeliveryRequest(HttpServletRequest edr) {
         AvangateService avangateSvc = null;
+        StringBuffer returnMsg = new StringBuffer();
 
         try {
-            requestInformation(edr);
             this.secretKeyProperties = propertiesCTX.getBean(SecretKeyProperties.class);
 
-            if (edr.getMethod().equalsIgnoreCase(RequestMethod.POST.name())){
+            if (edr.getMethod().equalsIgnoreCase(RequestMethod.POST.name())) {
                 log.info(String.format("EDR POST CALLED"));
-            } else if(edr.getMethod().equalsIgnoreCase(RequestMethod.GET.name())){
+            } else if (edr.getMethod().equalsIgnoreCase(RequestMethod.GET.name())) {
                 log.info(String.format("EDR GET CALLED"));
-                return new InjestorResult("OK","Get request processed");
+                return new InjestorResult("OK", "Get request processed");
             }
+
+            requestInformation(edr);
 
             avangateSvc = new AvangateService(edr);
 
-            if (avangateSvc.isValidAvangateSource(edr.getParameterMap())){
-                avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF),this.secretKeyProperties.getClsID());
-            } else {
+            if (avangateSvc.isValidAvangateSource(edr.getParameterMap())) {
+                Map<String, String[]> edrParams = edr.getParameterMap();
+                if (edrParams.containsKey(COMPANY) &&
+                        edrParams.containsKey(LICENSE_REF)){
+
+                    returnMsg.append(avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY),
+                            edr.getParameter(LICENSE_REF),this.secretKeyProperties.getClsID()));
+
+                }else{
+                    throw new Exception("Mandatory data COMPANY, AND LICENSE_REF is missing, process aborted");
+                }
+           } else {
                 throw new Exception("Data received from an un-authorised source");
             }
-        } catch (Exception e) {
-			log.error("Error has occurred.", e);
-			return new InjestorResult("ERROR", e.getMessage());
-		}
 
-        return new InjestorResult("OK",avangateSvc.acknowledgeReceiptEDR(edr.getParameter(COMPANY), edr.getParameter(LICENSE_REF),this.secretKeyProperties.getClsID()));
+
+        } catch (Exception e) {
+            log.error("Error has occurred.", e);
+            returnMsg.append(String.format("<Error>%s</Error>", e.getMessage()));
+            log.error(returnMsg);
+            return new InjestorResult("Error", returnMsg.toString());
+
+        }
+
+        return new InjestorResult("Ok", returnMsg.toString());
+
     }
 }

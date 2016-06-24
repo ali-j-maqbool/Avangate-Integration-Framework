@@ -1,11 +1,7 @@
-Example Spring Boot REST Service
-================================
-
-The article: [http://kielczewski.eu/2014/04/developing-restful-web-service-with-spring-boot/](http://kielczewski.eu/2014/04/developing-restful-web-service-with-spring-boot/)
 
 Requirements
 ------------
-* [Java Platform (JDK) 7](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+* [Java Platform (JDK) 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [Apache Maven 3.x](http://maven.apache.org/)
 
 Quick start
@@ -23,19 +19,27 @@ java -jar target/fno-avangate-connector-1.0-SNAPSHOT.war --server.port=8181
 If receive the error
 coyote.http11.Http11NioProtocol : Failed to start end point associated with ProtocolHandler
 
-Do the following
-
-lsof -i :8080 | grep LISTEN
-
-Similar to the following will be displayed
-java    78960 xyxss  119u  IPv6 0x6c20d372bc88c27d      0t0  TCP *:8092 (LISTEN)
-
-The 78960 is the process id, use the following command to kill the process
-
-kill -9 78960
-
-OR DO the following
+Do the following, if running on the 8080 port
 
 kill `lsof -i -n -P | grep TCP | grep 8080 | tr -s " " "\n" | sed -n 2p`
 
 Restart the application
+
+=================
+RELEASE Process
+=================
+1. Check that application properties pointing to the correct secret key in relation to the deployment environment test/production
+    a. avangate.instance=test
+    b. ALM properties pointing to the correct end points UAT or prod as appropriate
+    c. integrationFramework.devMode=true should be false
+    d. Run the application with correct and non correct hash to confirm hash is still calculated properly
+
+2. Notice the size of the war file currently around 31.2 mb, after uploading to the server, before deployment make sure it is still 31.2mb
+3. When uploading to the Web Server do not upload to the tomcat/webapps directly, first copy it locally to the webserver and then to the webapps folder
+4. Stop the application first on the web server
+5. Now undeploy the application
+6. Copy the new release to the tomcat/webapps folder
+7. Make sure application is started successfully
+
+Note: On the web server for tomcat to run smoothly set CATALINA_OPTS environment var to -XX:MaxPermSize=512m
+

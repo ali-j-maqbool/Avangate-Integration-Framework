@@ -36,7 +36,7 @@ implements IntegrationService {
         try {
             Credentials credentials = Credentials.getInstance((String) "ALM_connection.properties");
         } catch (Exception e) {
-            log.error((Object) ("Unable to load credentials: " + e.getMessage()), (Throwable) e);
+            log.error( ("Unable to load credentials: " + e.getMessage()), (Throwable) e);
         }
     }
 
@@ -52,7 +52,6 @@ implements IntegrationService {
         return Credentials.USER_ORG_HIERARCHY_SERVICE;
     }
 
-    //TODO:BEAN for managed device
     private String getManagedDeviceServiceEndpoint() {
         if (null != this.creds) {
             return this.creds.MANAGE_DEVICE_SERVICE_ENDPOINT;
@@ -131,11 +130,11 @@ implements IntegrationService {
 
     @Override
     public void addAccount(AccountVO account) {
-        log.debug((Object) ("Add account: " + account.getName()));
+        log.debug(("Add account: " + account.getName()));
         try {
             UserOrgHierarchyServiceLocator locator = new UserOrgHierarchyServiceLocator();
             UserOrgHierarchyServiceInterface service = locator.getUserOrgHierarchyService(new URL(this.getUserOrgServiceEndpoint()));
-            this.setServiceCredentials((Remote) service);
+            this.setServiceCredentials(service);
             CreateOrgRequestType req = new CreateOrgRequestType();
             OrganizationDataType[] orgdataarr = new OrganizationDataType[1];
             OrganizationDataType org1 = new OrganizationDataType();
@@ -155,12 +154,12 @@ implements IntegrationService {
             req.setOrganization(orgdataarr);
             CreateOrgResponseType response = service.createOrganization(req);
             if (response.getStatusInfo().getStatus().toString().equals(StatusType.SUCCESS.toString())) {
-                log.info((Object) "orgs created successfully ");
+                log.info( "orgs created successfully ");
             } else {
-                log.info((Object) ("failed - Reason for Failure -> " + response.getStatusInfo().getReason()));
+                log.info( ("failed - Reason for Failure -> " + response.getStatusInfo().getReason()));
             }
         } catch (Exception e) {
-            log.error((Object) "Error has occurred.", (Throwable) e);
+            log.error( "Error has occurred.", (Throwable) e);
         }
     }
 
@@ -199,12 +198,12 @@ implements IntegrationService {
             req.setUser(userRecs);
             CreateUserResponseType response = service.createUser(req);
             if (response.getStatusInfo().getStatus().toString().equals(StatusType.SUCCESS.toString())) {
-                log.info((Object) "Users create successfully ");
+                log.info( "Users create successfully ");
             } else {
-                log.info((Object) ("failed - Reason for Failure -> " + response.getStatusInfo().getReason()));
+                log.info( ("failed - Reason for Failure -> " + response.getStatusInfo().getReason()));
             }
         } catch (Exception e) {
-            log.error((Object) "Error has occurred.", (Throwable) e);
+            log.error( "Error has occurred.", (Throwable) e);
         }
     }
 
@@ -245,20 +244,18 @@ implements IntegrationService {
         }
         se1.setLineItems(lineItems);
         se1.setAutoDeploy(Boolean.valueOf(true));
-        ClientSecurityCredentials credentials = new ClientSecurityCredentials((Remote) service);
-        credentials.setUsername(this.getUser());
-        credentials.setPassword(this.getPassword());
+        this.setServiceCredentials(service);
         CreateSimpleEntitlementResponseType result = service.createSimpleEntitlement(request);
         if (result.getStatusInfo().getStatus() != StatusType.SUCCESS) {
-            log.info((Object) "Creation of simple entitlement failed.");
-            log.info((Object) ("Reason for Failure -> " + result.getStatusInfo().getReason()));
+            log.info( "Creation of simple entitlement failed.");
+            log.info( ("Reason for Failure -> " + result.getStatusInfo().getReason()));
             FailedSimpleEntitlementDataListType failedlist = result.getFailedData();
-            log.info((Object) ("Actual Reason for failure: " + failedlist.getFailedSimpleEntitlement()[0].getReason()));
+            log.info( ("Actual Reason for failure: " + failedlist.getFailedSimpleEntitlement()[0].getReason()));
             throw new Exception(result.getStatusInfo().getReason() + " : " + failedlist.getFailedSimpleEntitlement()[0].getReason());
         }
         CreatedSimpleEntitlementDataType[] createdData = result.getResponseData().getCreatedSimpleEntitlement();
-        log.info((Object) ("Added simple entitlement with unique ID " + createdData[0].getUniqueId()));
-        log.info((Object) ("Unique ID of added line item " + createdData[0].getLineItemUniqueIds(0)));
+        log.info( ("Added simple entitlement with unique ID " + createdData[0].getUniqueId()));
+        log.info( ("Unique ID of added line item " + createdData[0].getLineItemUniqueIds(0)));
     }
 
     public EntitlementDataType[] getEntitlement(EntitlementVO entitlement) throws Exception {
@@ -288,11 +285,8 @@ implements IntegrationService {
 
             searchRequest.setEntitlementSearchCriteria(criteria);
 
-            //criteria.setIsBulk(new Boolean(false));
+            this.setServiceCredentials(service);
 
-            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
-            credentials.setUsername(this.getUser());
-            credentials.setPassword(this.getPassword());
             SearchEntitlementResponseType searchResponse = service.getEntitlementsQuery(searchRequest);
 
             // Check the status in the response
@@ -342,6 +336,7 @@ implements IntegrationService {
     @Override
     public AccountVO getAccount(AccountVO account) throws Exception {
         AddressVO address = null;
+        AccountVO retrvdAcct = null;
         UserOrgHierarchyServiceLocator locator = new UserOrgHierarchyServiceLocator();
         UserOrgHierarchyServiceInterface service = locator.getUserOrgHierarchyService(new URL(this.getUserOrgServiceEndpoint()));
         this.setServiceCredentials(service);
@@ -356,7 +351,8 @@ implements IntegrationService {
             log.info("orgs retrieved successfully ");
             OrganizationDetailDataType orgDetail = response.getResponseData().getOrgData(0);
             log.info("Retrieved organization: " + orgDetail.getDisplayName());
-            account.setName(orgDetail.getDisplayName());
+            retrvdAcct = new AccountVO();
+            retrvdAcct.setName(orgDetail.getDisplayName());
             address = new AddressVO();
             if (null != orgDetail.getAddress()) {
                 address.setAddress1(orgDetail.getAddress().getAddress1());
@@ -366,6 +362,8 @@ implements IntegrationService {
                 address.setCountry(orgDetail.getAddress().getCountry());
                 address.setRegion(orgDetail.getAddress().getRegion());
                 address.setZipcode(orgDetail.getAddress().getZipcode());
+
+                retrvdAcct.setAddress(address);
             }
         } else {
             log.info("failed - account not found");
@@ -373,8 +371,8 @@ implements IntegrationService {
                 log.info(response.getStatusInfo().getReason());
             }
         }
-        account.setAddress(address);
-        return account;
+
+        return retrvdAcct;
     }
 
     private void setServiceCredentials(Remote service) throws SOAPException, UnsupportedEncodingException {
@@ -386,6 +384,7 @@ implements IntegrationService {
     @Override
     public UserVO getUser(UserVO user) throws Exception {
         AddressVO address = null;
+        UserVO retrievedUser=null;
         UserOrgHierarchyServiceLocator locator = new UserOrgHierarchyServiceLocator();
         UserOrgHierarchyServiceInterface service = locator.getUserOrgHierarchyService(new URL(this.getUserOrgServiceEndpoint()));
         this.setServiceCredentials(service);
@@ -398,27 +397,29 @@ implements IntegrationService {
         GetUsersQueryResponseType response = service.getUsersQuery(req);
         if (response.getStatusInfo().getStatus().toString().equals(StatusType.SUCCESS.toString()) &&
                 response.getResponseData() != null) {
-            log.info((Object) "user retrieved successfully ");
+            log.info( "user retrieved successfully ");
             UserDetailDataType userDetail = response.getResponseData().getUser(0);
-            log.info((Object) ("Retrieved USER: " + userDetail.getUserIdentifier().getPrimaryKeys().getEmailAddress()));
-            user.setEmail(userDetail.getUserIdentifier().getPrimaryKeys().getEmailAddress());
-            user.setFirstName(userDetail.getUserIdentifier().getPrimaryKeys().getFirstName());
-            user.setLastName(userDetail.getUserIdentifier().getPrimaryKeys().getLastName());
+            log.info( ("Retrieved USER: " + userDetail.getUserIdentifier().getPrimaryKeys().getEmailAddress()));
+            retrievedUser = new UserVO();
+            retrievedUser.setEmail(user.getEmail());
+            retrievedUser.setFirstName(userDetail.getUserIdentifier().getPrimaryKeys().getFirstName());
+            retrievedUser.setLastName(userDetail.getUserIdentifier().getPrimaryKeys().getLastName());
             address = new AddressVO();
-            if (null != userDetail.getStreet()) {
-                user.setId(userDetail.getUserIdentifier().getUniqueId());
+            if (null != userDetail.getCountry()) {
+                retrievedUser.setId(userDetail.getUserIdentifier().getUniqueId());
                 address.setAddress1(userDetail.getStreet());
                 address.setCity(userDetail.getCity());
                 address.setState(userDetail.getState());
                 address.setCountry(userDetail.getCountry());
                 address.setZipcode(userDetail.getZipcode());
+                retrievedUser.setAddress(address);
             }
 
             if (null != userDetail.getOrgRolesList()) {
-                user.setOrgsLinked(new ArrayList<String>());
+                retrievedUser.setOrgsLinked(new ArrayList<String>());
                 for (int i=0; i < userDetail.getOrgRolesList().getOrgRoles().length; i++) {
 
-                    user.addOrgsLinked(userDetail.getOrgRolesList().getOrgRoles()[i].getOrganization().getPrimaryKeys().getName());
+                    retrievedUser.addOrgsLinked(userDetail.getOrgRolesList().getOrgRoles()[i].getOrganization().getPrimaryKeys().getName());
                 }
 
             } else {
@@ -428,7 +429,7 @@ implements IntegrationService {
                 }
             }
         }
-        return null;
+        return retrievedUser;
     }
 
     public void updateEntitlementLine( EntitlementLineItemDataType entLine, String entId) throws Exception{
@@ -473,9 +474,7 @@ implements IntegrationService {
             lineItemData[0].setNumberOfCopies(entLine.getNumberOfCopies());
             lineItemData[0].setExpirationDate(entLine.getExpirationDate());
 
-            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
-            credentials.setUsername(this.getUser());
-            credentials.setPassword(this.getPassword());
+            this.setServiceCredentials(service);
 
             UpdateEntitlementLineItemResponseType updateLineResponse = service.updateEntitlementLineItem(updateLineRequest);
 
@@ -537,9 +536,6 @@ implements IntegrationService {
             cpRequest.setLineItem(liStateArray);
 
             //setup credentials
-            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
-            credentials.setUsername(this.getUser());
-            credentials.setPassword(this.getPassword());
             this.setServiceCredentials(service);
 
 
@@ -581,9 +577,9 @@ implements IntegrationService {
         GetUsersQueryResponseType response = service.getUsersQuery(req);
         if (response.getStatusInfo().getStatus().toString().equals(StatusType.SUCCESS.toString())
                 && response.getResponseData() != null) {
-            log.info((Object)"user retrieved successfully ");
+            log.info("user retrieved successfully ");
             UserDetailDataType userDetail = response.getResponseData().getUser(0);
-            log.info((Object)("Retrieved USER: " + userDetail.getUserIdentifier().getPrimaryKeys().getEmailAddress()));
+            log.info(("Retrieved USER: " + userDetail.getUserIdentifier().getPrimaryKeys().getEmailAddress()));
             usr.setEmail(userDetail.getUserIdentifier().getPrimaryKeys().getEmailAddress());
             usr.setFirstName(userDetail.getUserIdentifier().getPrimaryKeys().getFirstName());
             usr.setLastName(userDetail.getUserIdentifier().getPrimaryKeys().getLastName());
@@ -623,7 +619,6 @@ implements IntegrationService {
 
 
     		//setup credentials
-            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
             this.setServiceCredentials(service);
 
             UpdateUserRolesRequestType req = new UpdateUserRolesRequestType();
@@ -681,52 +676,51 @@ implements IntegrationService {
 			}
 	}
 
-    public String getCLSID(String orgName) {
+    public String getCLSID(String orgName) throws Exception {
         String clsID = "";
-        try {
-            ManageDeviceServiceInterface service = null;
-            ManageDeviceServiceLocator locator = new ManageDeviceServiceLocator();
-            GetAutoProvisionedServerRequest gapsr = new GetAutoProvisionedServerRequest(orgName);
-            service = locator.getManageDeviceService(new URL(this.getManagedDeviceServiceEndpoint()));
-            ClientSecurityCredentials credentials = new ClientSecurityCredentials(service);
-            credentials.setUsername(this.getUser());
-            credentials.setPassword(this.getPassword());
-            this.setServiceCredentials(service);
+        ManageDeviceServiceInterface service = null;
+        ManageDeviceServiceLocator locator = new ManageDeviceServiceLocator();
+        GetAutoProvisionedServerRequest gapsr = new GetAutoProvisionedServerRequest(orgName);
+        service = locator.getManageDeviceService(new URL(this.getManagedDeviceServiceEndpoint()));
+        this.setServiceCredentials(service);
 
-            log.info(orgName);
-            GetAutoProvisionedServerResponse response = service.getAutoProvisionedServer(gapsr);
-            clsID = response.getCloudLicenseServer().getServerIds().getServerId()[0];
-            log.info(response==null);
-        } catch(Exception e) {
-            log.error("error");
+        log.info(String.format("Retrieving the CLS_ID for the organisation %s", orgName));
+        GetAutoProvisionedServerResponse response = service.getAutoProvisionedServer(gapsr);
+        clsID = response.getCloudLicenseServer().getServerIds().getServerId()[0];
+        if (response.getStatusInfo().getStatus().toString().equals(StatusType.SUCCESS.toString())) {
+            log.info(String.format("CLS_ID for the organisation is %s", clsID));
+        }else {
+            log.info(String.format("CLS_ID not found for the organisation %s", orgName));
+            log.error(String.format("Reason for Failure -> %s",
+                    null == response.getStatusInfo().getReason() ? "Reason not returned" :
+                            response.getStatusInfo().getReason()));
         }
+
         return clsID;
     }
 
-    public ArrayList<String> getActivationID(String refNo) {
+    public ArrayList<String> getActivationID(String refNo) throws Exception{
         ArrayList<String> activationID = new ArrayList();
-        try {
-            EntitlementVO entitlement = new EntitlementVO();
-            entitlement.setId(refNo);
-            EntitlementDataType[] edt = getEntitlement(entitlement);
 
-            if(edt[0]==null){
-                throw new Exception("Entitlement not found");
+        EntitlementVO entitlement = new EntitlementVO();
+        entitlement.setId(refNo);
+
+        EntitlementDataType[] edt = getEntitlement(entitlement);
+
+        if(edt[0]==null){
+            throw new Exception("Entitlement not found");
+        } else {
+            if(edt[0].getSimpleEntitlement().getLineItems()==null) {
+                throw new Exception("Entitlement lines not found");
             } else {
-                if(edt[0].getSimpleEntitlement().getLineItems()==null) {
-                    throw new Exception("Entitlement lines not found");
-                } else {
-                    for(EntitlementLineItemDataType e : edt[0].getSimpleEntitlement().getLineItems()){
-                        if(e.getPartNumber().getPrimaryKeys().getPartId().contains("_ACTIVATION")){
-                            activationID.add(e.getActivationId().getId());
-                        }
+                for(EntitlementLineItemDataType e : edt[0].getSimpleEntitlement().getLineItems()){
+                    if(e.getPartNumber().getPrimaryKeys().getPartId().contains("_ACTIVATION")){
+                        activationID.add(e.getActivationId().getId());
                     }
                 }
             }
-
-        } catch(Exception e) {
-            log.error(e.getMessage());
         }
+
         return activationID;
     }
 }

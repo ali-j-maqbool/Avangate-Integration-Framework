@@ -4,6 +4,7 @@
 package com.flexerasoftware.fnocc.service;
 
 
+import java.lang.reflect.Array;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -34,15 +35,17 @@ import com.flexnet.operations.webservices.EntitlementLineItemDataType;
  */
 public class AvangateService {
 
-	private static final String COUNTRY_CODE = "COUNTRY_CODE";
+    public static final String EMAIL = "EMAIL";
+
+    private static final String COUNTRY_CODE = "COUNTRY_CODE";
 
 	private static final String IPN_DATE = "IPN_DATE";
 
 	private static final String IPN_PNAME = "IPN_PNAME[]";
 
-	private static final String LICENSE_TYPE_RENEW = "RENEW";
+	private static final String LICENSE_TYPE_RENEW = "RENEWAL";
 
-	private static final String LICENSE_TYPE_REGULAR = "REGULAR";
+    private static final String LICENSE_TYPE_REGULAR = "REGULAR";
 
 	private static final String IPN_LICENSE_TYPE = "IPN_LICENSE_TYPE[]";
 
@@ -88,6 +91,12 @@ public class AvangateService {
 
     public static final String ACTIVATION = "_ACTIVATION";
 	public static final String IPN_LICENSE_EXP = "IPN_LICENSE_EXP[]";
+    public static final String LICENSE_TYPE = "LICENSE_TYPE";
+    public static final String LCN_EXPIRATION_DATE = "EXPIRATION_DATE";
+    public static final String LCN_LICENSE_CODE = "LICENSE_CODE";
+    public static final String LCN_LICENSE_TYPE_REGULAR = "REGULAR";
+    public static final String LCN_LICENSE_TYPE_RENEW = "RENEW";
+
 
     static Logger log = Logger.getLogger(AvangateService.class.getName());
 	
@@ -106,7 +115,9 @@ public class AvangateService {
 	private HttpServletRequest incomingData;
 	private SimpleDateFormat dateFormat;
 	private SimpleDateFormat lineDateFormat;
-	private Date currentDate = new Date();
+    private SimpleDateFormat lcnDateFormat;
+
+    private Date currentDate = new Date();
 
 	private boolean validAvangateSource;
 
@@ -115,6 +126,7 @@ public class AvangateService {
 		this.incomingData = ipn;
 		this.dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 		this.lineDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        this.lcnDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 	}
 	
 	/**
@@ -126,6 +138,12 @@ public class AvangateService {
         //now calculate the length of each string and concatenate
         this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
         this.integrationFrameworkProperties = integFrmwrkCTX.getBean(IntegrationFrameworkProperties.class);
+
+        //Should always be set to false before building for RELEASE
+        if (this.integrationFrameworkProperties.getDevMode()) {
+            validAvangateSource = true;
+            return validAvangateSource;
+        }
 
         AvangateHmacmd md5 = AvangateHmacmd.getInstance();
         StringBuffer sb = new StringBuffer();
@@ -139,15 +157,15 @@ public class AvangateService {
                 if (val == null || val.isEmpty()) {
                     valLength = 0;
                     sb.append(String.format("%s", valLength));
-                    System.out.println("Was null or Empty-" + valLength);
+                    log.info("Was null or Empty-" + valLength);
                 } else if (val.equalsIgnoreCase("0")) {
                     valLength = 1;
                     sb.append(String.format("%s%s", valLength, val));
-                    System.out.println(valLength + "-" + val);
+                    log.info(valLength + "-" + val);
                 } else {
                     valLength = val.getBytes().length;
                     sb.append(String.format("%s%s", valLength, val));
-                    System.out.println(valLength + "-" + val);
+                    log.info(valLength + "-" + val);
                 }
             } else {
                 hashFromData = data.get(key)[0];
@@ -155,27 +173,21 @@ public class AvangateService {
         }
 
         //String dataforhmac = "192016-06-01 12:22:097100003702138COMPLETE13Wire transfer4John5Smith9BV-66778800000015101 Main Street08New York8New York650036524United States of America12951-121-2121019johnsmith@email.com4John5Smith015101 Main Street08New York8New York650036524United States of America12951-121-212114213.233.121.503USD1116Software program5PM_11011529.0040.00040.0000529.00534.0045.0043.381420050303123434";
-        //System.out.println("The hash code is:"+md5.calculatehmac(dataforhmac, "AABBCCDDEEFF"));
+        //log.info("The hash code is:"+md5.calculatehmac(dataforhmac, "AABBCCDDEEFF"));
         try {
             generatedHashCode = md5.calculatehmac(sb.toString().trim(), this.secretKeyProperties.getTestSecretkey());
-            System.out.println("The hash code is:" + generatedHashCode);
+            log.info("The hash code is:" + generatedHashCode);
         } catch (InvalidKeyException e) {
-            log.error("Error ocurred invalid key", e);
-            validAvangateSource = false;
+            log.error("Error occurred invalid key", e);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
             log.error("No Such Algorithm Exception", e);
-            validAvangateSource = false;
         }
 
         validAvangateSource = generatedHashCode.equals(hashFromData);
-        if (this.integrationFrameworkProperties.getDevMode()) {
-            validAvangateSource = true;
-            return true;
-        } else {
-            return generatedHashCode.equals(hashFromData);
-        }
+        return validAvangateSource;
     }
+
+
 	public String acknowledgeReceipt() {
 		if (validAvangateSource) {
             this.secretKeyProperties = secretKeyCTX.getBean(SecretKeyProperties.class);
@@ -238,29 +250,43 @@ public class AvangateService {
         }
     }
 
-    public String[] processEDR(String orgName, String refNo, boolean clsRequired) {
+    public String[] processEDR(String orgName, String refNo, boolean clsRequired) throws Exception{
         ALMIntegrationService almSvc = new ALMIntegrationService();
         String[] s = new String[2];
         StringBuffer activationID = new StringBuffer();
 
-        for(String IDs : almSvc.getActivationID(refNo)) {
-            activationID.append("<CODE>"+IDs+"</CODE>");
+        try {
+            ArrayList<String> actIDs = almSvc.getActivationID(refNo);
+
+            for (String IDs : actIDs) {
+                activationID.append("<CODE>" + IDs + "</CODE>");
+            }
         }
+        catch (Exception e){
+                throw new Exception(String.format("Entitlement not found for the ID %s", refNo));
+        }
+
         s[0] = activationID.toString();
 
         if(clsRequired) {
-            s[1] = almSvc.getCLSID(orgName);
+
+            try {
+                s[1] = almSvc.getCLSID(orgName);
+            }catch (Exception e1){
+                s[1]="";
+                throw new Exception(String.format("CLS_ID not found for the organisation %s", orgName));
+
+            }
         }
 
         return s;
     }
 
-    public String acknowledgeReceiptEDR(String orgName, String refNo, boolean clsRequired) {
+    public String acknowledgeReceiptEDR(String orgName, String refNo, boolean clsRequired) throws Exception{
         if (validAvangateSource) {
             //now calculate the length of each string and concatenate
             String hmacStr = "NOT_GENERATED";
             String[] s=processEDR(orgName,refNo,clsRequired);
-                //TODO:GET INFO FOR EDR RECEIPT
                 if(clsRequired) {
                     hmacStr = String.format("%s<CODE>%s</CODE>", s[0], s[1]);
                 } else {
@@ -269,7 +295,7 @@ public class AvangateService {
                 log.info(hmacStr);
             return hmacStr;
         } else {
-            return ("Data received did not pass validation test.");
+            return ("Data received did not pass validation test");
         }
     }
 
@@ -281,98 +307,144 @@ public class AvangateService {
 	 * 
 	 *
 	 */
-	public void process() throws Exception {
+	public void processIPN() throws Exception {
 		if (incomingData == null) {
 			throw new Exception("No data set.");
 		}
 
-		try {
-			//map data
-			//NOTE: HAD TO ENABLE COUNTRY_CODE, IPN_LICENSE_REF, IPN_LICENSE_TYPE, IPN_LICENSE_EXP[] in Avangate system
-			
-
-			// TODO: PROCESS THE INCOMING DATA
-			
-			Map<String, String[]> avangateData = incomingData.getParameterMap();
-            //TODO took out refund feature
-            if(avangateData.containsKey(ORDERSTATUS)) {
-                if (avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
-                    processRefund(avangateData);
-                    return;
-                }
+        Map<String, String[]> avangateData = incomingData.getParameterMap();
 
 
-                if (!avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(COMPLETE)) {
-                    //validate mandatory fields
-                    avangateData = validateOrderData(avangateData);
-                    if (avangateData.containsKey(MISSING_FIELDS_FOUND)) {
-                        throw new Exception(String.format("Missing data in the request %s", avangateData.get(MISSING_FIELDS_FOUND)[0]));
-                    }
+        if (avangateData.containsKey(ORDERSTATUS) &&
+                avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(REFUND)) {
+            processRefund(avangateData);
+            return;
 
-                    String s = incomingData.getParameter(IPN_PID);
+        }else if (avangateData.containsKey(ORDERSTATUS) &&
+                !avangateData.get(ORDERSTATUS)[0].equalsIgnoreCase(COMPLETE)){
 
-                    String ipnLicenseType = avangateData.get(IPN_LICENSE_TYPE)[0];
+            EntitlementVO entitlement = mapData(avangateData);
 
-                    if (ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR)) {
+            Map<String, String> missingData = validateOrderData(avangateData);
 
-                    } else if (ipnLicenseType.equals(LICENSE_TYPE_RENEW)) {
-
-                    } else {
-                        throw new Exception("Only REGULAR and RENEW IPN license types expected, Transaction aborted");
-                    }
-
-                    AccountVO account = new AccountVO();
-                    account.setId(avangateData.get(COMPANY)[0]);
-                    account.setName(avangateData.get(COMPANY)[0]);
-                    UserVO[] users = new UserVO[1];
-                    UserVO user = new UserVO();
-                    user.setAccountID(account.getId());
-                    user.setEmail(avangateData.get(CUSTOMEREMAIL)[0]);
-                    user.setFirstName(avangateData.get(FIRSTNAME)[0]);
-                    user.setLastName(avangateData.get(LASTNAME)[0]);
-                    AddressVO address = new AddressVO();
-                    address.setAddress1(avangateData.get(ADDRESS1)[0]);
-                    address.setAddress2(avangateData.get(ADDRESS2)[0]);
-                    address.setCountry(avangateData.get(COUNTRY_CODE)[0]);
-
-                    address.setCity(avangateData.get(CITY)[0]);
-                    address.setState(NOT_US_OR_CANADA);
-                    address.setZipcode(avangateData.get(ZIPCODE)[0]);
-                    user.setAddress(address);
-                    users[0] = user;
-                    account.setUsers(users);
-                    EntitlementVO entitlement = new EntitlementVO();
-                    entitlement.setAccount(account);
-                    entitlement.setId(avangateData.get(IPN_LICENSE_REF)[0]);
-                    entitlement.setOrderDate(new Date());
-                    EntitlementLineVO line = new EntitlementLineVO();
-                    line.setLineNumber(1);
-                    line.setSKU(avangateData.get(IPN_PID)[0]);
-                    //TODO:To be changed to IPN_LICENSE_START
-                    //line.setExpirationDate(avangateData.get(IPN_LICENSE_START)[0]);
-
-                    line.setEffectiveDate(new Date());
-                    line.setExpirationDate(lineDateFormat.parse(avangateData.get(IPN_LICENSE_EXP)[0]));
-                    line.setQuantity(Integer.parseInt(avangateData.get(IPN_QTY)[0]));
-                    EntitlementLineVO[] lines = new EntitlementLineVO[1];
-                    lines[0] = line;
-                    entitlement.setLines(lines);
-
-                    //process the order
-                    processAvangateOrder(entitlement, ipnLicenseType);
-                }
+            if (missingData.containsKey(MISSING_FIELDS_FOUND)) {
+                throw new Exception(String.format("Missing data in the request %s", missingData.get(MISSING_FIELDS_FOUND)));
             }
-		} catch (Exception e) {
-			log.error("Error has occurred.", e);
-		}
-	}
+
+            String ipnLicenseType = avangateData.get(IPN_LICENSE_TYPE)[0];
+
+            if (!ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR) && !ipnLicenseType.equals(LICENSE_TYPE_RENEW)) {
+                throw new Exception("Only REGULAR and RENEW IPN license types expected for IPN, Transaction aborted");
+            }
+
+            //process the order
+            processAvangateOrder(entitlement, ipnLicenseType);
+
+
+        }else{
+            log.info("Order received with complete status, request will be ignored.");
+        }
+
+
+    }
+
+    public void processLCN() throws Exception {
+        if (incomingData == null) {
+            throw new Exception("No data set.");
+        }
+
+        Map<String, String[]> avangateData = incomingData.getParameterMap();
+
+        AccountVO account = new AccountVO();
+        account.setId(avangateData.get(COMPANY)[0]);
+        account.setName(avangateData.get(COMPANY)[0]);
+        UserVO[] users = new UserVO[1];
+        UserVO user = new UserVO();
+        user.setAccountID(account.getId());
+
+        user.setEmail(avangateData.get(EMAIL)[0]);
+        AddressVO address = new AddressVO();
+        address.setAddress1(avangateData.get("ADDRESS")[0]);
+
+        address.setCity(avangateData.get(CITY)[0]);
+        address.setState(NOT_US_OR_CANADA);
+        address.setZipcode(avangateData.get("ZIP")[0]);
+        user.setAddress(address);
+        users[0] = user;
+        account.setUsers(users);
+
+        EntitlementVO entitlement = new EntitlementVO();
+        entitlement.setAccount(account);
+        entitlement.setId(avangateData.get(LCN_LICENSE_CODE)[0]);
+        entitlement.setOrderDate(new Date());
+        EntitlementLineVO line = new EntitlementLineVO();
+        line.setLineNumber(1);
+
+        line.setEffectiveDate(new Date());
+        line.setExpirationDate(lcnDateFormat.parse(avangateData.get(LCN_EXPIRATION_DATE)[0]));
+        EntitlementLineVO[] lines = new EntitlementLineVO[1];
+        lines[0] = line;
+        entitlement.setLines(lines);
+
+
+        //Possible values are REGULAR AND TRIAL, Only expected to process REGULAR types
+        if (avangateData.containsKey(LICENSE_TYPE) &&
+                (avangateData.get(LICENSE_TYPE)[0].equalsIgnoreCase(LCN_LICENSE_TYPE_REGULAR) ||
+                        avangateData.get(LICENSE_TYPE)[0].equalsIgnoreCase(LCN_LICENSE_TYPE_RENEW))) {
+            //process the order
+            retrieveAndUpdateEntitlement(entitlement, avangateData.get(LICENSE_TYPE)[0]);
+        }else{
+            throw new Exception("Only REGULAR license types are expected for LCN processing, Transaction aborted");
+        }
+    }
+
+
+    EntitlementVO mapData (Map<String, String[]> avangateData) throws Exception {
+
+        AccountVO account = new AccountVO();
+        account.setId(avangateData.get(COMPANY)[0]);
+        account.setName(avangateData.get(COMPANY)[0]);
+        UserVO[] users = new UserVO[1];
+        UserVO user = new UserVO();
+        user.setAccountID(account.getId());
+        user.setEmail(avangateData.get(CUSTOMEREMAIL)[0]);
+        user.setFirstName(avangateData.get(FIRSTNAME)[0]);
+        user.setLastName(avangateData.get(LASTNAME)[0]);
+        AddressVO address = new AddressVO();
+        address.setAddress1(avangateData.get(ADDRESS1)[0]);
+        address.setAddress2(avangateData.get(ADDRESS2)[0]);
+        address.setCountry(avangateData.get(COUNTRY_CODE)[0]);
+
+        address.setCity(avangateData.get(CITY)[0]);
+        address.setState(NOT_US_OR_CANADA);
+        address.setZipcode(avangateData.get(ZIPCODE)[0]);
+        user.setAddress(address);
+        users[0] = user;
+        account.setUsers(users);
+        EntitlementVO entitlement = new EntitlementVO();
+        entitlement.setAccount(account);
+        entitlement.setId(avangateData.get(IPN_LICENSE_REF)[0]);
+        entitlement.setOrderDate(new Date());
+        EntitlementLineVO line = new EntitlementLineVO();
+        line.setLineNumber(1);
+        line.setSKU(avangateData.get(IPN_PID)[0]);
+
+        line.setEffectiveDate(new Date());
+        line.setExpirationDate(lineDateFormat.parse(avangateData.get(IPN_LICENSE_EXP)[0]));
+        line.setQuantity(Integer.parseInt(avangateData.get(IPN_QTY)[0]));
+        EntitlementLineVO[] lines = new EntitlementLineVO[1];
+        lines[0] = line;
+        entitlement.setLines(lines);
+
+        return entitlement;
+
+    }
 
     public void processRefund(Map<String,String[]> request) throws Exception {
         if (incomingData == null) {
             throw new Exception("No data set.");
         }
         ALMIntegrationService almSvc = new ALMIntegrationService();
-        String activationID = "";
 
         //recieve data find right entitlement iterate through each line and change status to inactive
         EntitlementVO entitlement = new EntitlementVO();
@@ -380,7 +452,7 @@ public class AvangateService {
         EntitlementDataType[] edt = almSvc.getEntitlement(entitlement);
 
         if(edt[0]==null){
-            throw new Exception("Entitlement not found");
+            throw new Exception(String.format("Entitlement not found %s", request.get(IPN_LICENSE_REF)[0]));
         } else {
             if(edt[0].getSimpleEntitlement().getLineItems()==null) {
                 throw new Exception("Entitlement lines not found");
@@ -388,7 +460,6 @@ public class AvangateService {
                 for(EntitlementLineItemDataType e : edt[0].getSimpleEntitlement().getLineItems()){
                     e.setState(StateType.INACTIVE);
 
-//                    almSvc.updateEntitlementLine(e , edt[0].getSimpleEntitlement().getEntitlementId().getId());
                     almSvc.setEntitleLineStatus(StateType.INACTIVE,e.getActivationId().getId());
                 }
             }
@@ -401,83 +472,87 @@ public class AvangateService {
 
 
 
-        private Map<String, String[]> validateOrderData(Map<String, String[]> avangateData){
+        private Map<String, String> validateOrderData(Map<String, String[]> avangateData){
 		
-		StringBuffer missingFields = new StringBuffer();
+		    StringBuffer missingFields = new StringBuffer();
+            Map<String, String> missingData = new HashMap<String, String>(1);
 
-		//Account
-		if (null == avangateData.get(COMPANY)[0] || "".equalsIgnoreCase(avangateData.get(COMPANY)[0])){
-        	missingFields.append(String.format("%s%s", " ", avangateData.get(COMPANY)[0]));
-        }
-		//USER
-		if (null == avangateData.get(CUSTOMEREMAIL)[0] || "".equalsIgnoreCase(avangateData.get(CUSTOMEREMAIL)[0])){
-        	missingFields.append(String.format("%s%s", " ", avangateData.get(CUSTOMEREMAIL)[0]));
-		}
-	   	 if (null == avangateData.get(FIRSTNAME)[0] || "".equalsIgnoreCase(avangateData.get(FIRSTNAME)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(FIRSTNAME)[0]));
-	         }
-	   	 if (null == avangateData.get(LASTNAME)[0] || "".equalsIgnoreCase(avangateData.get(LASTNAME)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(LASTNAME)[0]));
-	         }
-	   	 if (null == avangateData.get(ADDRESS1)[0] || "".equalsIgnoreCase(avangateData.get(ADDRESS1)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(ADDRESS1)[0]));
-	         }
-	   	 if (null == avangateData.get(ZIPCODE)[0] || "".equalsIgnoreCase(avangateData.get(ZIPCODE)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(ZIPCODE)[0]));
-	         }
-	   	 if (null == avangateData.get(COUNTRY_CODE)[0] || "".equalsIgnoreCase(avangateData.get(COUNTRY_CODE)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(COUNTRY_CODE)[0]));
-	         }
-	   	 //Acknowledgement data
-	   	 if (null == avangateData.get(IPN_PID)[0] || "".equalsIgnoreCase(avangateData.get(IPN_PID)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(IPN_PID)[0]));
-	         }
-	   	 if (null == avangateData.get(IPN_PNAME)[0] || "".equalsIgnoreCase(avangateData.get(IPN_PNAME)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(IPN_PNAME)[0]));
-	         }
-	   	 if (null == avangateData.get(IPN_DATE)[0] || "".equalsIgnoreCase(avangateData.get(IPN_DATE)[0])){
-	           	missingFields.append(String.format("%s%s", " ", avangateData.get(IPN_DATE)[0]));
-	         }
-       	 
+            //Account
+            if (null == avangateData.get(COMPANY)[0] || "".equalsIgnoreCase(avangateData.get(COMPANY)[0])){
+                missingFields.append(String.format(" %S = %S", COMPANY, avangateData.get(COMPANY)[0]));
+            }
+            //USER
+            if (null == avangateData.get(CUSTOMEREMAIL)[0] || "".equalsIgnoreCase(avangateData.get(CUSTOMEREMAIL)[0])){
+                missingFields.append(String.format(" %S = %S", CUSTOMEREMAIL, avangateData.get(CUSTOMEREMAIL)[0]));
+            }
+             if (null == avangateData.get(FIRSTNAME)[0] || "".equalsIgnoreCase(avangateData.get(FIRSTNAME)[0])){
+                    missingFields.append(String.format(" %S = %S", FIRSTNAME, avangateData.get(FIRSTNAME)[0]));
+                 }
+             if (null == avangateData.get(LASTNAME)[0] || "".equalsIgnoreCase(avangateData.get(LASTNAME)[0])){
+                    missingFields.append(String.format(" %S = %S", LASTNAME, avangateData.get(LASTNAME)[0]));
+                 }
+             if (null == avangateData.get(ADDRESS1)[0] || "".equalsIgnoreCase(avangateData.get(ADDRESS1)[0])){
+                    missingFields.append(String.format(" %S = %S", ADDRESS1, avangateData.get(ADDRESS1)[0]));
+                 }
+             if (null == avangateData.get(ZIPCODE)[0] || "".equalsIgnoreCase(avangateData.get(ZIPCODE)[0])){
+                    missingFields.append(String.format(" %S = %S", ZIPCODE, avangateData.get(ZIPCODE)[0]));
+                 }
+             if (null == avangateData.get(COUNTRY_CODE)[0] || "".equalsIgnoreCase(avangateData.get(COUNTRY_CODE)[0])){
+                    missingFields.append(String.format(" %S = %S", COUNTRY_CODE, avangateData.get(COUNTRY_CODE)[0]));
+                 }
+             //Acknowledgement data
+             if (null == avangateData.get(IPN_PID)[0] || "".equalsIgnoreCase(avangateData.get(IPN_PID)[0])){
+                    missingFields.append(String.format(" %S = %S", IPN_PID, avangateData.get(IPN_PID)[0]));
+                 }
+             if (null == avangateData.get(IPN_PNAME)[0] || "".equalsIgnoreCase(avangateData.get(IPN_PNAME)[0])){
+                    missingFields.append(String.format(" %S = %S", IPN_PNAME, avangateData.get(IPN_PNAME)[0]));
+                 }
+             if (null == avangateData.get(IPN_DATE)[0] || "".equalsIgnoreCase(avangateData.get(IPN_DATE)[0])){
+                    missingFields.append(String.format("%s = %s", IPN_DATE, avangateData.get(IPN_DATE)[0]));
+                 }
 
-		if (missingFields.length() > 0){
-			avangateData.put(MISSING_FIELDS_FOUND, new String[]{missingFields.toString()});
-		}
-		return avangateData;
+
+            if (missingFields.toString().trim().length() > 0){
+                missingData.put(MISSING_FIELDS_FOUND, missingFields.toString());
+            }
+            return missingData;
 		
 	}
 
 
-    public void processAvangateOrder(EntitlementVO entitlement, String ipnLicenseType){
+    public void processAvangateOrder(EntitlementVO entitlement, String ipnLicenseType) throws Exception{
 
-        try{
-            ALMIntegrationService almSvc = new ALMIntegrationService();
+        ALMIntegrationService almSvc = new ALMIntegrationService();
 
+        //does entitlement exist, create/update
+        EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
 
-            if (entitlement.getAccount().getUsers().length > 0){
-                log.warn(String.format(
-                        "Unexpectedly, more than one user attached to the account only the first user processed, %s",
-                        entitlement.getAccount().getUsers()[0].getEmail()));
-            }
-
-            //does entitlement exist, create/update
-            EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
-
-            if(ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_RENEW) && null == entData){
-                StringBuilder sb = new StringBuilder();
-                sb.append(String.format("Cannot renew entitlement as entitlement [%s] does not exist",entitlement.getId()));
-                throw new Exception(sb.toString());
-            }
-
-            if (null == entData){
-                createNewEntitlement(entitlement, almSvc);
-            }else{
-                updateEntitlement(entitlement, almSvc, entData);
-            }
-
-      }catch (Exception ex){
-            log.error("Error occurred processing Order", ex);
+        if(ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_RENEW) && null == entData){
+            throw new Exception(String.format("IPN with LICENSE_TYPE=RENEW received, but cannot renew entitlement as entitlement [%s] does not exist",
+                    entitlement.getId()));
+        }else if(ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR) && null == entData){
+            createNewEntitlement(entitlement, almSvc);
+        }else if (ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_RENEW) && null != entData){
+            updateEntitlement(entitlement, almSvc, entData);
+        }else if(ipnLicenseType.equalsIgnoreCase(LICENSE_TYPE_REGULAR) && null != entData) {
+            throw new Exception(String.format("IPN with LICENSE_TYPE=REGULAR received, but cannot create the entitlement as entitlement [%s] already exist",
+                    entitlement.getId()));
         }
+    }
+
+    public void retrieveAndUpdateEntitlement(EntitlementVO entitlement, String ipnLicenseType) throws Exception {
+
+        ALMIntegrationService almSvc = new ALMIntegrationService();
+
+        //does entitlement exist, create/update
+        EntitlementDataType[] entData = almSvc.getEntitlement(entitlement);
+
+        if(null == entData){
+
+            throw new Exception(String.format("Unexpected condition, Cannot update entitlement as entitlement (IPN_REF/LICENSE_CODE) [%s] does not exist",entitlement.getId()));
+        }
+
+        updateEntitlement(entitlement, almSvc, entData);
     }
 
     void createNewEntitlement(EntitlementVO entitlement, ALMIntegrationService almSvc) throws Exception{
@@ -485,28 +560,34 @@ public class AvangateService {
         //does account exist?
         AccountVO acctVO;
         acctVO = almSvc.getAccount(entitlement.getAccount());
+
+        if (null == acctVO){
+            //create account
+            almSvc.addAccount(entitlement.getAccount());
+        }
+
         //rule in Avangate, one company = one user, however one user can be linked to multiple companies
-        //therefore below not expecting multiple users to be returned, in any get the first one
+        //therefore below not expecting multiple users to be returned, in any case get the first one
         UserVO	userVOAvangate = almSvc.getUser(entitlement.getAccount().getUsers()[0]);
 
         //check if this user exist in the FNO Cloud
         //UserVO userVOFNO = almSvc.getUserWithLinkedOrgs(userVOAvangate);
 
         if (null == userVOAvangate) {
-			//create account
-			almSvc.addAccount(entitlement.getAccount());
-			//if user exist in other organisation in FNO try to link to the new org now
-            UserVO user = entitlement.getAccount().getUsers()[0];
-			if (null != user.getOrgsLinked() && user.getOrgsLinked().size() > 0 &&
-					!user.getOrgsLinked().contains(entitlement.getAccount().getName())) {
+            //create user, only one user is expected
+            almSvc.addUser(entitlement.getAccount().getUsers()[0]);
+        }else{
+            //if user exist in other organisation in FNO try to link to the new org now
+			if (null != userVOAvangate.getOrgsLinked() && userVOAvangate.getOrgsLinked().size() > 0 &&
+					!userVOAvangate.getOrgsLinked().contains(entitlement.getAccount().getName())) {
 				//link new organisation
-				almSvc.linkUserToOrganisation(user, entitlement.getAccount().getName());
-			} else {
-				//create user, only one user is expected
-				almSvc.addUser(entitlement.getAccount().getUsers()[0]);
+				almSvc.linkUserToOrganisation(userVOAvangate, entitlement.getAccount().getName());
+
 
 			}
-		}
+
+
+        }
 
             //now add entitlement, Line 1 is usage based part number as received from the Avangate
             //and add another Line 2 as the activation based line
@@ -544,11 +625,11 @@ public class AvangateService {
         lineForActivationProduct.setLineNumber(lineForUsageProduct.getLineNumber()+1);
         lineForActivationProduct.setSKU(String.format("%s%s", lineForUsageProduct.getSKU(), ACTIVATION));
         //dates are exactly the same as the usage based entitlement line
-        //TODO:What if the line is permanent??
+        //What if the line is permanent - NO it is not the use case for now.
         lineForActivationProduct.setEffectiveDate(lineForUsageProduct.getEffectiveDate());
         lineForActivationProduct.setExpirationDate(lineForUsageProduct.getExpirationDate());
 
-        //TODO:Quantity, will both always same? how the order is place in the Avangate system?
+        //Quantity, will both always same? yes
         lineForActivationProduct.setQuantity(lineForUsageProduct.getQuantity());
         EntitlementLineVO[] lines = new EntitlementLineVO[1];
         lines[0] = lineForActivationProduct;
